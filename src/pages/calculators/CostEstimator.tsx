@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '../../components/ui/Card';
 import { InputField } from '../../components/ui/InputField';
 import { InfoBox } from '../../components/ui/InfoBox';

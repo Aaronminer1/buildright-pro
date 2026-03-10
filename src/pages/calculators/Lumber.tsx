@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from 'react';
-import { Card, ResultCard } from '../components/ui/Card';
-import { InputField } from '../components/ui/InputField';
-import { SelectField } from '../components/ui/SelectField';
-import { Tabs } from '../components/ui/Button';
-import { InfoBox } from '../components/ui/InfoBox';
-import { calcBoardFeet, round2 } from '../utils/calculations';
+import { useState, useMemo } from 'react';
+import { Card, ResultCard } from '../../components/ui/Card';
+import { InputField } from '../../components/ui/InputField';
+import { Tabs } from '../../components/ui/Button';
+import { InfoBox } from '../../components/ui/InfoBox';
+import { calcBoardFeet, round2 } from '../../utils/calculations';
+import { PriceIndexBanner } from '../../components/ui/PriceIndexBanner';
+
+const LUMBER_SERIES = ['softwood_lumber', 'plywood'] as const;
 
 const TABS = [
   { id: 'bf',    label: 'Board Feet',      icon: '🪵' },

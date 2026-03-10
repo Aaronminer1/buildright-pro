@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { Card, ResultCard } from '../components/ui/Card';
-import { InputField } from '../components/ui/InputField';
-import { SelectField } from '../components/ui/SelectField';
-import { Tabs } from '../components/ui/Button';
-import { InfoBox } from '../components/ui/InfoBox';
-import { calcFlooring, calcTile, calcSiding } from '../utils/calculations';
+import { useState, useMemo } from 'react';
+import { Card, ResultCard } from '../../components/ui/Card';
+import { InputField } from '../../components/ui/InputField';
+import { SelectField } from '../../components/ui/SelectField';
+import { Tabs } from '../../components/ui/Button';
+import { InfoBox } from '../../components/ui/InfoBox';
+import { calcFlooring, calcTile, calcSiding } from '../../utils/calculations';
 
 const TABS = [
   { id: 'floor',  label: 'Flooring',  icon: '🏠' },

@@ -1,9 +1,10 @@
 import React, { createContext, useContext } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
 import type {
   ContractorProfile, Customer, Quote, Invoice, Payment, BOM,
 } from '../types/business';
 import { DEFAULT_PROFILE, addDays, todayStr } from '../types/business';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface BusinessContextType {
   contractor: ContractorProfile;
@@ -42,25 +43,28 @@ function nextNumber(prefix: string, existing: string[]): string {
 }
 
 export function BusinessProvider({ children }: { children: React.ReactNode }) {
-  const [contractor, setContractor] = useLocalStorage<ContractorProfile>('brp_contractor', DEFAULT_PROFILE);
-  const [customers, setCustomers]   = useLocalStorage<Customer[]>('brp_customers', []);
-  const [quotes, setQuotes]         = useLocalStorage<Quote[]>('brp_quotes', []);
-  const [invoices, setInvoices]     = useLocalStorage<Invoice[]>('brp_invoices', []);
-  const [boms, setBoms]             = useLocalStorage<BOM[]>('brp_boms', []);
+  const contractorRow = useLiveQuery(() => db.settings.get('contractor'), []);
+  const contractor = (contractorRow?.value as ContractorProfile) ?? DEFAULT_PROFILE;
 
-  const updateContractor = (updates: Partial<ContractorProfile>) =>
-    setContractor(prev => ({ ...prev, ...updates }));
+  const customers = useLiveQuery(() => db.customers.orderBy('createdAt').toArray(), []) ?? [];
+  const quotes    = useLiveQuery(() => db.quotes.orderBy('dateCreated').toArray(), []) ?? [];
+  const invoices  = useLiveQuery(() => db.invoices.orderBy('dateIssued').toArray(), []) ?? [];
+  const boms      = useLiveQuery(() => db.boms.orderBy('dateCreated').toArray(), []) ?? [];
+
+  const updateContractor = (updates: Partial<ContractorProfile>) => {
+    db.settings.put({ key: 'contractor', value: { ...contractor, ...updates } });
+  };
 
   // ─── Customers ───────────────────────────────────────────────────────────
   const addCustomer = (c: Omit<Customer, 'id' | 'createdAt'>): Customer => {
     const customer: Customer = { ...c, id: `cust_${Date.now()}`, createdAt: todayStr() };
-    setCustomers(prev => [...prev, customer]);
+    db.customers.add(customer);
     return customer;
   };
   const updateCustomer = (id: string, updates: Partial<Customer>) =>
-    setCustomers(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    db.customers.update(id, updates);
   const deleteCustomer = (id: string) =>
-    setCustomers(prev => prev.filter(c => c.id !== id));
+    db.customers.delete(id);
 
   // ─── Quotes ──────────────────────────────────────────────────────────────
   const addQuote = (q: Omit<Quote, 'id' | 'quoteNumber'>): Quote => {
@@ -72,13 +76,13 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       dateCreated: today,
       validUntil: q.validUntil || addDays(today, contractor.defaultValidDays || 30),
     };
-    setQuotes(prev => [...prev, quote]);
+    db.quotes.add(quote);
     return quote;
   };
   const updateQuote = (id: string, updates: Partial<Quote>) =>
-    setQuotes(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
+    db.quotes.update(id, updates);
   const deleteQuote = (id: string) =>
-    setQuotes(prev => prev.filter(q => q.id !== id));
+    db.quotes.delete(id);
 
   // ─── Invoices ────────────────────────────────────────────────────────────
   const addInvoice = (inv: Omit<Invoice, 'id' | 'invoiceNumber'>): Invoice => {
@@ -90,57 +94,51 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       dateIssued: today,
       dateDue: inv.dateDue || addDays(today, 30),
     };
-    setInvoices(prev => [...prev, invoice]);
+    db.invoices.add(invoice);
     return invoice;
   };
   const updateInvoice = (id: string, updates: Partial<Invoice>) =>
-    setInvoices(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+    db.invoices.update(id, updates);
   const deleteInvoice = (id: string) =>
-    setInvoices(prev => prev.filter(i => i.id !== id));
+    db.invoices.delete(id);
 
   const addPayment = (invoiceId: string, p: Omit<Payment, 'id'>) => {
     const payment: Payment = { ...p, id: `pay_${Date.now()}` };
-    setInvoices(prev => prev.map(inv => {
-      if (inv.id !== invoiceId) return inv;
-      const payments = [...inv.payments, payment];
-      const paid = payments.reduce((s, x) => s + x.amount, 0);
-      const { total } = (() => {
-        const sub = inv.lineItems.reduce((s, item) =>
-          s + item.qty * item.unitCost * (1 + item.markupPct / 100), 0);
-        const tax = sub * (inv.taxPct / 100);
-        return { total: sub + tax };
-      })();
-      const status: Invoice['status'] =
-        paid <= 0 ? inv.status :
-        paid >= total ? 'paid' : 'partial';
-      return { ...inv, payments, status };
-    }));
+    const inv = invoices.find(i => i.id === invoiceId);
+    if (!inv) return;
+    const payments = [...inv.payments, payment];
+    const paid = payments.reduce((s, x) => s + x.amount, 0);
+    const sub  = inv.lineItems.reduce((s, item) =>
+      s + item.qty * item.unitCost * (1 + item.markupPct / 100), 0);
+    const total = sub + sub * (inv.taxPct / 100);
+    const status: Invoice['status'] =
+      paid <= 0 ? inv.status : paid >= total ? 'paid' : 'partial';
+    db.invoices.update(invoiceId, { payments, status });
   };
 
   const deletePayment = (invoiceId: string, paymentId: string) => {
-    setInvoices(prev => prev.map(inv => {
-      if (inv.id !== invoiceId) return inv;
-      const payments = inv.payments.filter(p => p.id !== paymentId);
-      const paid = payments.reduce((s, p) => s + p.amount, 0);
-      const sub = inv.lineItems.reduce((s, item) =>
-        s + item.qty * item.unitCost * (1 + item.markupPct / 100), 0);
-      const total = sub + sub * (inv.taxPct / 100);
-      const status: Invoice['status'] =
-        paid <= 0 ? 'sent' : paid >= total ? 'paid' : 'partial';
-      return { ...inv, payments, status };
-    }));
+    const inv = invoices.find(i => i.id === invoiceId);
+    if (!inv) return;
+    const payments = inv.payments.filter(p => p.id !== paymentId);
+    const paid = payments.reduce((s, p) => s + p.amount, 0);
+    const sub  = inv.lineItems.reduce((s, item) =>
+      s + item.qty * item.unitCost * (1 + item.markupPct / 100), 0);
+    const total = sub + sub * (inv.taxPct / 100);
+    const status: Invoice['status'] =
+      paid <= 0 ? 'sent' : paid >= total ? 'paid' : 'partial';
+    db.invoices.update(invoiceId, { payments, status });
   };
 
   // ─── BOMs ────────────────────────────────────────────────────────────────
   const addBOM = (b: Omit<BOM, 'id' | 'dateCreated'>): BOM => {
     const bom: BOM = { ...b, id: `bom_${Date.now()}`, dateCreated: todayStr() };
-    setBoms(prev => [...prev, bom]);
+    db.boms.add(bom);
     return bom;
   };
   const updateBOM = (id: string, updates: Partial<BOM>) =>
-    setBoms(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+    db.boms.update(id, updates);
   const deleteBOM = (id: string) =>
-    setBoms(prev => prev.filter(b => b.id !== id));
+    db.boms.delete(id);
 
   return (
     <BusinessContext.Provider value={{

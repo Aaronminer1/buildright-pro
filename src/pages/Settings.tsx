@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Building2, Users, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Building2, Users, Plus, Pencil, Trash2, Check, X, Download, Upload, HardDrive } from 'lucide-react';
 import { useBusiness } from '../context/BusinessContext';
 import type { Customer } from '../types/business';
+import { exportBackup, importBackup } from '../db/backup';
 
-const TABS = ['Business Info', 'Customers'] as const;
+const TABS = ['Business Info', 'Customers', 'Data'] as const;
 type Tab = typeof TABS[number];
 
 function Field({ label, value, onChange, type = 'text', placeholder = '' }: {
@@ -85,6 +86,42 @@ export function Settings() {
   const [saved, setSaved] = useState(false);
   const [addingCust, setAddingCust] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [backupStatus, setBackupStatus] = useState<'idle' | 'exporting' | 'importing' | 'done' | 'error'>('idle');
+  const [backupMsg, setBackupMsg] = useState('');
+  const importRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = async () => {
+    setBackupStatus('exporting');
+    try {
+      await exportBackup();
+      setBackupStatus('done');
+      setBackupMsg('Backup file downloaded.');
+    } catch (e) {
+      setBackupStatus('error');
+      setBackupMsg('Export failed. Try again.');
+    }
+    setTimeout(() => setBackupStatus('idle'), 3000);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!window.confirm('This will REPLACE all current data with the backup. Are you sure?')) {
+      e.target.value = '';
+      return;
+    }
+    setBackupStatus('importing');
+    try {
+      await importBackup(file);
+      setBackupStatus('done');
+      setBackupMsg('Backup restored successfully.');
+    } catch (err) {
+      setBackupStatus('error');
+      setBackupMsg(err instanceof Error ? err.message : 'Import failed.');
+    }
+    e.target.value = '';
+    setTimeout(() => setBackupStatus('idle'), 4000);
+  };
 
   const set = (field: keyof typeof contractor) => (v: string) =>
     updateContractor({ [field]: field === 'defaultTaxPct' || field === 'defaultValidDays' ? parseFloat(v) || 0 : v });
@@ -103,7 +140,7 @@ export function Settings() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               tab === t ? 'bg-amber-500 text-white' : 'text-slate-600 hover:bg-slate-50'
             }`}>
-            {t === 'Business Info' ? <Building2 size={15} /> : <Users size={15} />}
+            {t === 'Business Info' ? <Building2 size={15} /> : t === 'Customers' ? <Users size={15} /> : <HardDrive size={15} />}
             {t}
           </button>
         ))}
@@ -158,6 +195,80 @@ export function Settings() {
               Save Settings
             </button>
             {saved && <span className="text-green-600 text-sm flex items-center gap-1"><Check size={14} /> Saved</span>}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Data Backup ─── */}
+      {tab === 'Data' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+            <div>
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                <HardDrive size={16} className="text-amber-500" />
+                Local Storage — IndexedDB
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                All your data — jobs, customers, quotes, invoices, and checklists — is stored
+                locally on this device using IndexedDB. Nothing is sent to any server.
+                It stays here unless you clear your browser data.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+                <span className="flex items-center gap-1">✅ Works offline</span>
+                <span className="flex items-center gap-1">✅ No account needed</span>
+                <span className="flex items-center gap-1">✅ No cloud upload</span>
+                <span className="flex items-center gap-1">⚠️ Device-specific (won't sync across devices)</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+            <h3 className="font-semibold text-slate-800">Backup &amp; Restore</h3>
+            <p className="text-sm text-slate-500">
+              Export a backup file to your device — save it to cloud storage, email it to yourself,
+              or copy it to another device. Use Restore to bring it back.
+            </p>
+
+            {backupStatus === 'done' && (
+              <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm">
+                <Check size={15} /> {backupMsg}
+              </div>
+            )}
+            {backupStatus === 'error' && (
+              <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm">
+                <X size={15} /> {backupMsg}
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={handleExport}
+                disabled={backupStatus === 'exporting'}
+                className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-60 transition-colors">
+                <Download size={15} />
+                {backupStatus === 'exporting' ? 'Exporting…' : 'Export Backup'}
+              </button>
+
+              <button
+                onClick={() => importRef.current?.click()}
+                disabled={backupStatus === 'importing'}
+                className="flex items-center gap-2 px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-60 transition-colors">
+                <Upload size={15} />
+                {backupStatus === 'importing' ? 'Restoring…' : 'Restore Backup'}
+              </button>
+              <input
+                ref={importRef}
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="sr-only"
+              />
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Tip: Back up weekly and save the file to your phone's Google Drive or iCloud so
+              you can restore on a new device or after clearing browser data.
+            </p>
           </div>
         </div>
       )}

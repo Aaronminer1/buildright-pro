@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { Card, ResultCard } from '../components/ui/Card';
-import { InputField } from '../components/ui/InputField';
-import { SelectField } from '../components/ui/SelectField';
-import { Tabs } from '../components/ui/Button';
-import { InfoBox } from '../components/ui/InfoBox';
+import { useState, useMemo } from 'react';
+import { Card, ResultCard } from '../../components/ui/Card';
+import { InputField } from '../../components/ui/InputField';
+import { SelectField } from '../../components/ui/SelectField';
+import { Tabs } from '../../components/ui/Button';
+import { InfoBox } from '../../components/ui/InfoBox';
 import { calcCMUBlocks } from '../../utils/calculations';
 
 const TABS = [

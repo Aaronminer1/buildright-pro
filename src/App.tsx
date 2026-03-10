@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
 import { BusinessProvider } from './context/BusinessContext';
+import { migrateFromLocalStorage } from './db/migrate';
 import { Layout } from './components/layout/Layout';
 
 // Pages
@@ -37,6 +39,20 @@ import { Plumbing }           from './pages/calculators/Plumbing';
 import { Tile }               from './pages/calculators/Tile';
 
 export default function App() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    migrateFromLocalStorage().finally(() => setReady(true));
+  }, []);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-slate-500 text-sm">Loading BuildRight Pro…</div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <AppProvider>
