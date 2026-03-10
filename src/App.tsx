@@ -30,6 +30,7 @@ import { Flooring }           from './pages/calculators/Flooring';
 import { Insulation }         from './pages/calculators/Insulation';
 import { HVAC }               from './pages/calculators/HVAC';
 import { CostEstimator }      from './pages/calculators/CostEstimator';
+import { CalculatorsIndex }   from './pages/calculators/CalculatorsIndex';
 import { Hardware }           from './pages/calculators/Hardware';
 import { Electrical }         from './pages/calculators/Electrical';
 import { Plumbing }           from './pages/calculators/Plumbing';
@@ -58,7 +59,7 @@ export default function App() {
 
               {/* Calculators */}
               <Route path="calculators">
-                <Route index element={<Navigate to="/calculators/concrete" replace />} />
+                <Route index element={<CalculatorsIndex />} />
                 <Route path="concrete"    element={<ConcreteFoundation />} />
                 <Route path="framing"     element={<Framing />} />
                 <Route path="roofing"     element={<Roofing />} />

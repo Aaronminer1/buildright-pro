@@ -97,7 +97,7 @@ export function Dashboard() {
             and safety guides all in one place.
           </p>
           <div className="flex flex-wrap gap-2 mt-4">
-            <Link to="/calculators/concrete"
+            <Link to="/calculators"
               className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               Open Calculators
             </Link>
@@ -170,7 +170,7 @@ export function Dashboard() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-slate-800">Quick Calculators</h2>
-          <Link to="/calculators/concrete" className="text-sm text-amber-600 hover:text-amber-700 flex items-center gap-1">
+          <Link to="/calculators" className="text-sm text-amber-600 hover:text-amber-700 flex items-center gap-1">
             All tools <ChevronRight size={14} />
           </Link>
         </div>
@@ -303,7 +303,7 @@ export function Dashboard() {
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { icon: <FolderOpen size={24} className="text-blue-500" />, title: '1. Create a Project', desc: 'Set up your job — add address, client, phase, and square footage.', to: '/projects' },
-            { icon: <Calculator size={24} className="text-amber-500" />, title: '2. Run Calculations', desc: 'Use 15+ calculators covering concrete, framing, roofing, plumbing, electrical, and more.', to: '/calculators/concrete' },
+            { icon: <Calculator size={24} className="text-amber-500" />, title: '2. Run Calculations', desc: 'Use 15+ calculators covering concrete, framing, roofing, plumbing, electrical, and more.', to: '/calculators' },
             { icon: <ClipboardCheck size={24} className="text-green-500" />, title: '3. Follow Checklists', desc: '8 phase-specific inspection checklists with IRC/OSHA code references.', to: '/checklists' },
           ].map(s => (
             <Link key={s.title} to={s.to}
