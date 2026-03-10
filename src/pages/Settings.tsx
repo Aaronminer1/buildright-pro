@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
-import { Building2, Users, Plus, Pencil, Trash2, Check, X, Download, Upload, HardDrive } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Building2, Users, Plus, Pencil, Trash2, Check, X, Download, Upload, HardDrive, Lock, ShieldCheck, ShieldOff } from 'lucide-react';
 import { useBusiness } from '../context/BusinessContext';
 import type { Customer } from '../types/business';
 import { exportBackup, importBackup } from '../db/backup';
+import { setPin, removePin, isPinEnabled, verifyPin } from '../db/pin';
 
 const TABS = ['Business Info', 'Customers', 'Data'] as const;
 type Tab = typeof TABS[number];
@@ -89,6 +90,58 @@ export function Settings() {
   const [backupStatus, setBackupStatus] = useState<'idle' | 'exporting' | 'importing' | 'done' | 'error'>('idle');
   const [backupMsg, setBackupMsg] = useState('');
   const importRef = useRef<HTMLInputElement>(null);
+
+  // PIN state
+  const [pinEnabled, setPinEnabled] = useState<boolean>(false);
+  const [pinMode, setPinMode] = useState<'idle' | 'setting' | 'removing' | 'changing'>('idle');
+  const [pinError, setPinError] = useState('');
+  const [pinSuccess, setPinSuccess] = useState('');
+  const [pinCurrent, setPinCurrent] = useState('');
+  const [pinNew, setPinNew] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+
+  useEffect(() => {
+    isPinEnabled().then(setPinEnabled);
+  }, []);
+
+  const resetPinForm = () => {
+    setPinMode('idle');
+    setPinError('');
+    setPinCurrent('');
+    setPinNew('');
+    setPinConfirm('');
+  };
+
+  const handleSetPin = async () => {
+    if (!/^\d{4}$/.test(pinNew)) { setPinError('PIN must be exactly 4 digits.'); return; }
+    if (pinNew !== pinConfirm) { setPinError('PINs do not match.'); return; }
+    await setPin(pinNew);
+    setPinEnabled(true);
+    setPinSuccess('PIN enabled. You will be prompted next time you open the app.');
+    resetPinForm();
+    setTimeout(() => setPinSuccess(''), 4000);
+  };
+
+  const handleRemovePin = async () => {
+    const ok = await verifyPin(pinCurrent);
+    if (!ok) { setPinError('Incorrect PIN.'); return; }
+    await removePin();
+    setPinEnabled(false);
+    setPinSuccess('PIN removed.');
+    resetPinForm();
+    setTimeout(() => setPinSuccess(''), 4000);
+  };
+
+  const handleChangePin = async () => {
+    const ok = await verifyPin(pinCurrent);
+    if (!ok) { setPinError('Current PIN is incorrect.'); return; }
+    if (!/^\d{4}$/.test(pinNew)) { setPinError('New PIN must be exactly 4 digits.'); return; }
+    if (pinNew !== pinConfirm) { setPinError('New PINs do not match.'); return; }
+    await setPin(pinNew);
+    setPinSuccess('PIN changed successfully.');
+    resetPinForm();
+    setTimeout(() => setPinSuccess(''), 4000);
+  };
 
   const handleExport = async () => {
     setBackupStatus('exporting');
@@ -269,6 +322,145 @@ export function Settings() {
               Tip: Back up weekly and save the file to your phone's Google Drive or iCloud so
               you can restore on a new device or after clearing browser data.
             </p>
+          </div>
+
+          {/* ─── PIN Lock ─── */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                <Lock size={16} className="text-amber-500" />
+                App Lock PIN
+              </h3>
+              {pinEnabled
+                ? <span className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full"><ShieldCheck size={13} /> Enabled</span>
+                : <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full"><ShieldOff size={13} /> Disabled</span>}
+            </div>
+
+            <p className="text-sm text-slate-500">
+              Set a 4-digit PIN to lock the app when you leave. You'll be prompted to enter it
+              next time you open BuildRight Pro.
+            </p>
+
+            {pinSuccess && (
+              <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm">
+                <Check size={15} /> {pinSuccess}
+              </div>
+            )}
+            {pinError && (
+              <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm">
+                <X size={15} /> {pinError}
+              </div>
+            )}
+
+            {pinMode === 'idle' && (
+              <div className="flex flex-wrap gap-3">
+                {!pinEnabled && (
+                  <button onClick={() => { setPinMode('setting'); setPinError(''); }}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
+                    <Lock size={15} /> Set PIN
+                  </button>
+                )}
+                {pinEnabled && (
+                  <>
+                    <button onClick={() => { setPinMode('changing'); setPinError(''); }}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
+                      <Lock size={15} /> Change PIN
+                    </button>
+                    <button onClick={() => { setPinMode('removing'); setPinError(''); }}
+                      className="flex items-center gap-2 px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                      <ShieldOff size={15} /> Remove PIN
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {pinMode === 'setting' && (
+              <div className="space-y-3 max-w-xs">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">New PIN (4 digits)</label>
+                  <input type="password" inputMode="numeric" maxLength={4} value={pinNew}
+                    onChange={e => { setPinNew(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(''); }}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="••••" autoFocus />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Confirm PIN</label>
+                  <input type="password" inputMode="numeric" maxLength={4} value={pinConfirm}
+                    onChange={e => { setPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(''); }}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="••••" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleSetPin}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">
+                    <Check size={14} /> Enable PIN
+                  </button>
+                  <button onClick={resetPinForm}
+                    className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm hover:bg-slate-50">
+                    <X size={14} /> Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {pinMode === 'removing' && (
+              <div className="space-y-3 max-w-xs">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Enter current PIN to confirm</label>
+                  <input type="password" inputMode="numeric" maxLength={4} value={pinCurrent}
+                    onChange={e => { setPinCurrent(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(''); }}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="••••" autoFocus />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleRemovePin}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600">
+                    <ShieldOff size={14} /> Remove PIN
+                  </button>
+                  <button onClick={resetPinForm}
+                    className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm hover:bg-slate-50">
+                    <X size={14} /> Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {pinMode === 'changing' && (
+              <div className="space-y-3 max-w-xs">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Current PIN</label>
+                  <input type="password" inputMode="numeric" maxLength={4} value={pinCurrent}
+                    onChange={e => { setPinCurrent(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(''); }}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="••••" autoFocus />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">New PIN (4 digits)</label>
+                  <input type="password" inputMode="numeric" maxLength={4} value={pinNew}
+                    onChange={e => { setPinNew(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(''); }}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="••••" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Confirm New PIN</label>
+                  <input type="password" inputMode="numeric" maxLength={4} value={pinConfirm}
+                    onChange={e => { setPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(''); }}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="••••" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleChangePin}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">
+                    <Check size={14} /> Update PIN
+                  </button>
+                  <button onClick={resetPinForm}
+                    className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm hover:bg-slate-50">
+                    <X size={14} /> Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

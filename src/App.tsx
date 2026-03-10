@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
 import { BusinessProvider } from './context/BusinessContext';
 import { migrateFromLocalStorage } from './db/migrate';
+import { PinLockScreen, usePinGate } from './components/PinLockScreen';
 import { Layout } from './components/layout/Layout';
 
 // Pages
@@ -24,8 +25,8 @@ import { BOMPage }          from './pages/BOM';
 import { ConcreteFoundation } from './pages/calculators/ConcreteFoundation';
 import { Framing }            from './pages/calculators/Framing';
 import { Roofing }            from './pages/calculators/Roofing';
-import { StairsCalc }           from './pages/calculators/Stairs';
-import { LumberCalc }            from './pages/calculators/Lumber';
+import { StairsCalc }         from './pages/calculators/Stairs';
+import { LumberCalc }         from './pages/calculators/Lumber';
 import { Masonry }            from './pages/calculators/Masonry';
 import { Interior }           from './pages/calculators/Interior';
 import { Flooring }           from './pages/calculators/Flooring';
@@ -38,21 +39,7 @@ import { Electrical }         from './pages/calculators/Electrical';
 import { Plumbing }           from './pages/calculators/Plumbing';
 import { Tile }               from './pages/calculators/Tile';
 
-export default function App() {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    migrateFromLocalStorage().finally(() => setReady(true));
-  }, []);
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-slate-500 text-sm">Loading BuildRight Pro…</div>
-      </div>
-    );
-  }
-
+function AppRoutes() {
   return (
     <BrowserRouter>
       <AppProvider>
@@ -101,4 +88,40 @@ export default function App() {
       </AppProvider>
     </BrowserRouter>
   );
+}
+
+function AppShell() {
+  const { locked, unlock } = usePinGate();
+
+  if (locked === null) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-slate-400 text-sm">Loading…</div>
+      </div>
+    );
+  }
+
+  if (locked) {
+    return <PinLockScreen onUnlocked={unlock} />;
+  }
+
+  return <AppRoutes />;
+}
+
+export default function App() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    migrateFromLocalStorage().finally(() => setReady(true));
+  }, []);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-slate-400 text-sm">Loading BuildRight Pro…</div>
+      </div>
+    );
+  }
+
+  return <AppShell />;
 }
