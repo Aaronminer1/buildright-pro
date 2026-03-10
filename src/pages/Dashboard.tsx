@@ -11,14 +11,18 @@ import { CHECKLIST_PHASES } from '../data/referenceData';
 import { calcQuoteTotals, calcInvoiceTotals, fmt } from '../types/business';
 
 const QUICK_TOOLS = [
-  { to: '/calculators/concrete',   label: 'Concrete Calc',    icon: '🏗️', desc: 'Slabs, footings, walls' },
-  { to: '/calculators/framing',    label: 'Framing Calc',     icon: '🔨', desc: 'Studs, joists, rafters' },
-  { to: '/calculators/roofing',    label: 'Roof Calc',        icon: '🏠', desc: 'Pitch, area, materials' },
-  { to: '/calculators/stairs',     label: 'Stair Calc',       icon: '📐', desc: 'Rise, run, stringer' },
-  { to: '/calculators/cost',       label: 'Cost Estimator',   icon: '💰', desc: 'Full project estimate' },
-  { to: '/calculators/lumber',     label: 'Lumber Calc',      icon: '🪵', desc: 'Board feet & quantities' },
-  { to: '/calculators/interior',   label: 'Drywall & Paint',  icon: '🎨', desc: 'Sheets, gallons, tape' },
-  { to: '/calculators/insulation', label: 'Insulation',       icon: '🌡️', desc: 'R-values, batts, blown-in' },
+  { to: '/calculators/concrete',   label: 'Concrete Calc',         icon: '🏗️', desc: 'Slabs, footings, walls' },
+  { to: '/calculators/framing',    label: 'Framing Calc',          icon: '🔨', desc: 'Studs, joists, rafters' },
+  { to: '/calculators/roofing',    label: 'Roof Calc',             icon: '🏠', desc: 'Pitch, area, materials' },
+  { to: '/calculators/stairs',     label: 'Stair Calc',            icon: '📐', desc: 'Rise, run, stringer' },
+  { to: '/calculators/cost',       label: 'Cost Estimator',        icon: '💰', desc: 'Full project estimate' },
+  { to: '/calculators/lumber',     label: 'Lumber Calc',           icon: '🪵', desc: 'Board feet & quantities' },
+  { to: '/calculators/interior',   label: 'Drywall & Paint',       icon: '🎨', desc: 'Sheets, gallons, tape' },
+  { to: '/calculators/insulation', label: 'Insulation',            icon: '🌡️', desc: 'R-values, batts, blown-in' },
+  { to: '/calculators/hardware',   label: 'Hardware & Connectors', icon: '🔩', desc: 'Hangers, ties, nail schedule' },
+  { to: '/calculators/electrical', label: 'Electrical Rough-In',   icon: '⚡', desc: 'Circuits, wire, outlets' },
+  { to: '/calculators/plumbing',   label: 'Plumbing Rough-In',     icon: '🚿', desc: 'Fixtures, DWV, PEX supply' },
+  { to: '/calculators/tile',       label: 'Tile & Wet Areas',      icon: '🔳', desc: 'Tile, cement board, Schluter' },
 ];
 
 const BUILD_PHASES = [
@@ -109,7 +113,7 @@ export function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Active Projects', value: activeProjects.length, icon: <FolderOpen size={20} className="text-blue-500" />, bg: 'bg-blue-50' },
-          { label: 'Calculators',     value: 11,                    icon: <Calculator size={20} className="text-amber-500" />, bg: 'bg-amber-50' },
+          { label: 'Calculators',     value: 15,                    icon: <Calculator size={20} className="text-amber-500" />, bg: 'bg-amber-50' },
           { label: 'Checklist Items', value: totalItems,            icon: <ClipboardCheck size={20} className="text-green-500" />, bg: 'bg-green-50' },
           { label: 'Items Checked',   value: checkedItems,          icon: <TrendingUp size={20} className="text-purple-500" />, bg: 'bg-purple-50' },
         ].map(s => (
@@ -299,7 +303,7 @@ export function Dashboard() {
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { icon: <FolderOpen size={24} className="text-blue-500" />, title: '1. Create a Project', desc: 'Set up your job — add address, client, phase, and square footage.', to: '/projects' },
-            { icon: <Calculator size={24} className="text-amber-500" />, title: '2. Run Calculations', desc: 'Use 11+ calculators covering concrete, framing, roofing, costs, and more.', to: '/calculators/concrete' },
+            { icon: <Calculator size={24} className="text-amber-500" />, title: '2. Run Calculations', desc: 'Use 15+ calculators covering concrete, framing, roofing, plumbing, electrical, and more.', to: '/calculators/concrete' },
             { icon: <ClipboardCheck size={24} className="text-green-500" />, title: '3. Follow Checklists', desc: '8 phase-specific inspection checklists with IRC/OSHA code references.', to: '/checklists' },
           ].map(s => (
             <Link key={s.title} to={s.to}
