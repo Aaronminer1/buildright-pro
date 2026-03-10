@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { Card, ResultCard } from '../components/ui/Card';
-import { InputField } from '../components/ui/InputField';
-import { SelectField, ToggleField } from '../components/ui/SelectField';
-import { Tabs } from '../components/ui/Button';
-import { InfoBox } from '../components/ui/InfoBox';
-import { calcDrywall, calcPaint } from '../utils/calculations';
+import { useState, useMemo } from 'react';
+import { Card, ResultCard } from '../../components/ui/Card';
+import { InputField } from '../../components/ui/InputField';
+import { SelectField, ToggleField } from '../../components/ui/SelectField';
+import { Tabs } from '../../components/ui/Button';
+import { InfoBox } from '../../components/ui/InfoBox';
+import { calcDrywall, calcPaint } from '../../utils/calculations';
 
 const TABS = [
   { id: 'drywall', label: 'Drywall', icon: '🔲' },
@@ -20,19 +20,14 @@ function DrywallCalc() {
   const [ceiling, setCeiling] = useState(true);
   const [sheetW,  setSheetW]  = useState('4x8');
 
-  const sheetSqFt = sheetW === '4x12' ? 48 : sheetW === '4x16' ? 64 : 32;
-
   const res = useMemo(() => calcDrywall(
     parseFloat(length)||0, parseFloat(width)||0, parseFloat(height)||0,
-    parseInt(doors)||0, parseInt(windows)||0, ceiling, sheetSqFt
-  ), [length, width, height, doors, windows, ceiling, sheetSqFt]);
+    parseInt(doors)||0, parseInt(windows)||0, ceiling,
+    (sheetW === '4x12' ? '4x12' : '4x8') as '4x8' | '4x12'
+  ), [length, width, height, doors, windows, ceiling, sheetW]);
 
   // Additional supplies
   const screwLbs   = Math.round(res.sheets * 0.25);
-  const cornerBead = Math.round(
-    (parseInt(doors)||0) * 2 * (parseFloat(height)||0) +
-    (parseInt(windows)||0) * 4 * 3
-  );
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
@@ -61,17 +56,17 @@ function DrywallCalc() {
         <Card title="Drywall Results">
           <div className="grid grid-cols-2 gap-3">
             <ResultCard label={`${sheetW} Sheets`} value={res.sheets} highlight />
-            <ResultCard label="5-gal Joint Compound (\"Mud\") Buckets" value={res.jcBuckets} unit="buckets" />
-            <ResultCard label="Wall Area (net)" value={res.wallSqFt} unit="SF" small />
-            {ceiling && <ResultCard label="Ceiling Area" value={res.ceilingSqFt} unit="SF" small />}
-            <ResultCard label="Total Area"   value={res.totalSqFt}  unit="SF" small />
-            <ResultCard label="Drywall Tape" value={res.tapeFt} unit="LF (linear feet)" small />
+            <ResultCard label='5-gal Joint Compound ("Mud") Buckets' value={res.jc5Gal} unit="buckets" />
+            <ResultCard label="Wall Area (net)" value={res.wallArea} unit="SF" small />
+            {ceiling && <ResultCard label="Ceiling Area" value={res.ceilingArea} unit="SF" small />}
+            <ResultCard label="Total Area"   value={res.totalArea}  unit="SF" small />
+            <ResultCard label="Drywall Tape" value={res.tapeLF} unit="LF (linear feet)" small />
           </div>
         </Card>
         <Card title="Hardware & Supplies">
           <div className="grid grid-cols-2 gap-3">
             <ResultCard label="Drywall Screws" value={screwLbs}   unit="lbs"  small />
-            <ResultCard label="Corner Bead (LF = linear feet)" value={cornerBead} unit="LF" small />
+            <ResultCard label="Corner Bead (LF = linear feet)" value={res.cornerBeadLF} unit="LF" small />
           </div>
           <p className="text-xs text-slate-400 mt-3">
             1 LF corner bead per door/window edge. One 5-gal bucket covers ~200 SF.
@@ -150,18 +145,18 @@ function PaintCalc() {
         <Card title="Paint Results">
           <div className="grid grid-cols-2 gap-3">
             <ResultCard label="Total Gallons" value={totalGals} highlight />
-            <ResultCard label="Paint Gallons" value={res.paintGallons} unit="gal" />
+            <ResultCard label="Paint Gallons" value={res.totalGallons} unit="gal" />
             {primer && <ResultCard label="Primer Gallons" value={primerGals} unit="gal" small />}
-            <ResultCard label="Paintable Area" value={res.totalSqFt} unit="SF" small />
-            <ResultCard label="Wall Area"     value={res.wallSqFt}    unit="SF" small />
-            {ceiling && <ResultCard label="Ceiling Area" value={res.ceilingSqFt} unit="SF" small />}
+            <ResultCard label="Paintable Area" value={totalArea} unit="SF" small />
+            <ResultCard label="Wall Area"     value={wallArea}    unit="SF" small />
+            {ceiling && <ResultCard label="Ceiling Area" value={ceilingArea} unit="SF" small />}
           </div>
         </Card>
 
         <Card title="Breakdown by Quarts">
           <div className="grid grid-cols-3 gap-3">
-            <ResultCard label="Walls Qts"   value={Math.ceil(res.paintGallons * 4 * (res.wallSqFt / res.totalSqFt))} small />
-            {ceiling && <ResultCard label="Ceiling Qts" value={Math.ceil(res.paintGallons * 4 * (res.ceilingSqFt / res.totalSqFt))} small />}
+            <ResultCard label="Walls Qts"   value={Math.ceil(res.wallGallons * 4)} small />
+            {ceiling && <ResultCard label="Ceiling Qts" value={Math.ceil(res.ceilingGallons * 4)} small />}
             <ResultCard label="Primer Qts"  value={primerGals * 4} small />
           </div>
           <p className="text-xs text-slate-400 mt-2">
