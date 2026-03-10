@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, ResultCard } from '../../components/ui/Card';
 import { InputField } from '../../components/ui/InputField';
 import { SelectField } from '../../components/ui/SelectField';
+import { InfoBox } from '../../components/ui/InfoBox';
 import { calcHVACLoad } from '../../utils/calculations';
 
 const CLIMATE_ZONES = [
@@ -61,21 +62,46 @@ export function HVAC() {
 
   return (
     <div className="space-y-5">
+      <InfoBox title="🏠 HVAC Basics: What Is All This, and Why Does It Matter?" variant="blue" collapsible>
+        <p>HVAC stands for <strong>Heating, Ventilation, and Air Conditioning</strong> — the system that keeps your home warm in winter and cool in summer. Sizing it correctly is important: too small and it can't keep up; too big and it runs in short bursts that waste energy and leave your home humid.</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">BTU</div>
+            <div className="text-slate-500">British Thermal Unit — a measure of heat energy. Higher BTU = more heating power. Think of it as horsepower for your heater.</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Tons</div>
+            <div className="text-slate-500">How cooling capacity is measured. 1 ton = 12,000 BTU/hr. Most homes need 2 to 5 tons of cooling.</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">CFM</div>
+            <div className="text-slate-500">Cubic Feet per Minute — how much air the system moves. This determines duct and vent sizing.</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Manual J</div>
+            <div className="text-slate-500">The official HVAC sizing calculation method. This calculator gives you a rough estimate — always get a real Manual J done by a contractor before buying equipment.</div>
+          </div>
+        </div>
+        <p className="mt-2 text-xs"><strong>What to enter:</strong> Just enter the square footage of your home, ceiling height, climate zone (see the Insulation calculator for your zone), and whether your home is well-insulated or not.</p>
+      </InfoBox>
+
       <div className="grid lg:grid-cols-2 gap-6">
         <Card title="Building Details" subtitle="Simplified Manual J load estimate">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <InputField label="Conditioned SF" value={sqft}   onChange={setSqft}   unit="SF" />
-              <InputField label="Ceiling Height" value={ceilHt} onChange={setCeilHt} unit="ft" />
+              <InputField label="Conditioned Square Footage" value={sqft} onChange={setSqft} unit="SF"
+                hint="The total heated/cooled floor area of your home (not including garage, unfinished basement)" />
+              <InputField label="Ceiling Height" value={ceilHt} onChange={setCeilHt} unit="ft"
+                hint="Average ceiling height. Standard is 8–9 ft." />
             </div>
-            <SelectField label="Climate Zone (IECC)" value={zone} onChange={setZone}
+            <SelectField label="Climate Zone (how cold/hot is your area?)" value={zone} onChange={setZone}
               options={CLIMATE_ZONES}
             />
-            <SelectField label="Insulation Package" value={insPkg} onChange={setInsPkg}
+            <SelectField label="How well insulated is the home?" value={insPkg} onChange={setInsPkg}
               options={[
-                { value: 'poor',      label: 'Poor — below code (older home renovation)' },
-                { value: 'good',      label: 'Good — meets current energy code' },
-                { value: 'excellent', label: 'Excellent — exceeds code, tight envelope' },
+                { value: 'poor',      label: 'Poor — older home, drafty, minimal insulation' },
+                { value: 'good',      label: 'Good — built to modern code (most new homes)' },
+                { value: 'excellent', label: 'Excellent — energy star, tight construction, spray foam' },
               ]}
             />
             <div className="grid grid-cols-2 gap-4">
@@ -100,10 +126,15 @@ export function HVAC() {
         <div className="space-y-4">
           <Card title="Load Estimates">
             <div className="grid grid-cols-2 gap-3">
-              <ResultCard label="Heating Load"        value={adjustedHeat.toLocaleString()} unit="BTU/hr" highlight />
-              <ResultCard label="Cooling Load"        value={adjustedCool} unit="tons" highlight />
-              <ResultCard label="Recommended Unit"    value={recTons}      unit="tons" />
-              <ResultCard label="System CFM"          value={cfm}          unit="CFM" />
+              <ResultCard label="Heating Load" value={adjustedHeat.toLocaleString()} unit="BTU/hr" highlight note="furnace/heat pump output needed" />
+              <ResultCard label="Cooling Load" value={adjustedCool} unit="tons" highlight note="AC capacity needed" />
+              <ResultCard label="Recommended Unit Size" value={recTons} unit="tons" />
+              <ResultCard label="Airflow (CFM)" value={cfm} unit="CFM" note="duct system sizing" />
+            </div>
+            <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2 text-xs text-green-700">
+              <strong>What this means:</strong> Your home needs a <strong>{recTons}-ton AC unit</strong> and
+              a furnace that can output at least <strong>{adjustedHeat.toLocaleString()} BTU/hr</strong>.
+              Look for these numbers when shopping for HVAC equipment.
             </div>
           </Card>
 

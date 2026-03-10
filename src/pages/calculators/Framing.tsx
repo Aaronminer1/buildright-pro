@@ -4,6 +4,7 @@ import { InputField } from '../../components/ui/InputField';
 import { SelectField } from '../../components/ui/SelectField';
 import { ToggleField } from '../../components/ui/SelectField';
 import { Tabs } from '../../components/ui/Button';
+import { InfoBox } from '../../components/ui/InfoBox';
 import { calcWallFraming, calcFloorJoists, calcRafters, boardFeet, round2 } from '../../utils/calculations';
 import { HEADER_SIZES } from '../../data/referenceData';
 
@@ -42,6 +43,14 @@ function WallFraming() {
   const platesBF = round2(boardFeet(1.5, lumberWidthIn, parseFloat(wallLen) || 0, 3));
 
   return (
+    <div className="space-y-5">
+      <InfoBox title="🏠 Framing Basics: What Are We Counting?" variant="blue" collapsible>
+        <p><strong>Studs</strong> are the vertical wooden boards that make up your walls — think of them as the skeleton of the house. Standard size is a 2×4 (real size: 1.5” × 3.5”). Exterior walls often use 2×6 for more insulation space.</p>
+        <p><strong>"OC" (On Center)</strong> means the distance measured from the <em>center</em> of one stud to the center of the next. "16” OC" (the most common) means studs are placed every 16 inches apart. This spacing matters because drywall and sheathing sheets are sized to align with these spacings.</p>
+        <p><strong>Board Feet (BF)</strong> is how lumber is sold in bulk — it's a volume measurement. 1 board foot = a board 1 inch thick, 12 inches wide, and 12 inches long. Larger or longer boards have more board feet.</p>
+        <p><strong>Plates</strong> are the horizontal boards at the top and bottom of each wall. Each wall has 3 plates: 1 bottom plate and 2 top plates (doubled for strength).</p>
+      </InfoBox>
+
     <div className="grid lg:grid-cols-2 gap-6">
       <Card title="Inputs" subtitle="Single wall section">
         <div className="space-y-4">
@@ -52,15 +61,15 @@ function WallFraming() {
           </div>
           <SelectField label="Stud Spacing" value={spacing} onChange={setSpacing}
             options={[
-              { value: 12, label: '12" OC (structural/heavy load)' },
-              { value: 16, label: '16" OC (standard residential)' },
-              { value: 24, label: '24" OC (advanced framing/value engineering)' },
+              { value: 12, label: '12" OC — very strong, heavy load or tile walls' },
+              { value: 16, label: '16" OC — standard for almost all homes' },
+              { value: 24, label: '24" OC — uses less lumber, still code-compliant' },
             ]}
           />
           <SelectField label="Lumber Size" value={lumber} onChange={setLumber}
             options={[
-              { value: '2x4', label: '2×4 (standard interior/exterior)' },
-              { value: '2x6', label: '2×6 (exterior wall, better insulation)' },
+              { value: '2x4', label: '2×4 — standard walls (3.5" deep)' },
+              { value: '2x6', label: '2×6 — exterior walls with more insulation (5.5" deep)' },
             ]}
           />
           <div className="grid grid-cols-2 gap-4">
@@ -68,19 +77,19 @@ function WallFraming() {
             <InputField label="Window Openings" value={windows} onChange={setWindows} step={1} min={0} />
           </div>
           <ToggleField label="Has Exterior Corner" checked={isCorner} onChange={setIsCorner}
-            hint="Adds 3-stud corner package" />
+            hint="A corner where two exterior walls meet needs 3 studs for nailing. Turn this on if calculating a corner wall." />
         </div>
       </Card>
 
       <div className="space-y-4">
         <Card title="Stud Count">
           <div className="grid grid-cols-2 gap-3">
-            <ResultCard label="Total Studs"     value={result.studs}         highlight />
-            <ResultCard label="Board Feet (studs)" value={studsBF}           unit="BF" />
+            <ResultCard label="Total Studs Needed" value={result.studs}         highlight />
+            <ResultCard label="Board Feet (studs)"  value={studsBF}           unit="BF" note="lumber volume" />
           </div>
           <div className="mt-3 text-xs text-slate-500 space-y-0.5">
             <div>Field studs: {Math.ceil((parseFloat(wallLen)||0) / (parseInt(spacing)||16) * 12) + 1}</div>
-            <div>Opening studs (trimmers + kings): {(parseInt(doors)||0 + parseInt(windows)||0) * 4}</div>
+            <div>Opening studs (around doors/windows): {(parseInt(doors)||0 + parseInt(windows)||0) * 4}</div>
             {isCorner && <div>Corner studs: 3</div>}
           </div>
         </Card>
@@ -88,11 +97,11 @@ function WallFraming() {
         <Card title="Plates & Lumber">
           <div className="grid grid-cols-3 gap-3">
             <ResultCard label="Top Plates (2)" value={result.topPlatesLF}   unit="LF" small />
-            <ResultCard label="Bottom Plate"  value={result.bottomPlateLF} unit="LF" small />
-            <ResultCard label="Total Plates"  value={result.totalPlateLF}  unit="LF" small />
+            <ResultCard label="Bottom Plate"   value={result.bottomPlateLF} unit="LF" small />
+            <ResultCard label="Total Plates"   value={result.totalPlateLF}  unit="LF" small />
           </div>
           <div className="mt-3">
-            <ResultCard label="Total Lumber (studs + plates)" value={round2(studsBF + platesBF)} unit="Board Feet" highlight />
+            <ResultCard label="Total Lumber (studs + all plates)" value={round2(studsBF + platesBF)} unit="Board Feet" highlight />
           </div>
         </Card>
 
@@ -103,6 +112,7 @@ function WallFraming() {
           </div>
         </Card>
       </div>
+    </div>
     </div>
   );
 }

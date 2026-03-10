@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
-import { Card, ResultCard } from '../../components/ui/Card';
-import { InputField } from '../../components/ui/InputField';
-import { SelectField } from '../../components/ui/SelectField';
-import { Tabs } from '../../components/ui/Button';
-import { calcFlooring, calcTile, calcSiding } from '../../utils/calculations';
+import React, { useState, useMemo } from 'react';
+import { Card, ResultCard } from '../components/ui/Card';
+import { InputField } from '../components/ui/InputField';
+import { SelectField } from '../components/ui/SelectField';
+import { Tabs } from '../components/ui/Button';
+import { InfoBox } from '../components/ui/InfoBox';
+import { calcFlooring, calcTile, calcSiding } from '../utils/calculations';
 
 const TABS = [
   { id: 'floor',  label: 'Flooring',  icon: '🏠' },
@@ -13,12 +14,12 @@ const TABS = [
 
 // Coverage per box by flooring type (typical, in SF)
 const FLOORING_TYPES: Record<string, { label: string; sfPerBox: number; unit: string }> = {
-  lvp:       { label: 'LVP / LVT',                  sfPerBox: 20,   unit: 'boxes' },
-  hardwood:  { label: 'Hardwood (3/4")',             sfPerBox: 18,   unit: 'boxes' },
-  laminate:  { label: 'Laminate',                    sfPerBox: 22,   unit: 'boxes' },
-  carpet:    { label: 'Carpet (sold by yard)',        sfPerBox: 9,    unit: 'sq yd' },  // 9 SF/SY
-  engineered:{ label: 'Engineered Hardwood',         sfPerBox: 20,   unit: 'boxes' },
-  tile:      { label: 'Tile (use Tile tab for count)', sfPerBox: 20,  unit: 'boxes' },
+  lvp:       { label: 'LVP / LVT — Luxury Vinyl (waterproof, most popular)',  sfPerBox: 20,   unit: 'boxes' },
+  hardwood:  { label: 'Hardwood (3/4") — real wood, refinishable',            sfPerBox: 18,   unit: 'boxes' },
+  laminate:  { label: 'Laminate — looks like wood, budget-friendly',          sfPerBox: 22,   unit: 'boxes' },
+  carpet:    { label: 'Carpet (sold by square yard)',                          sfPerBox: 9,    unit: 'sq yd' },
+  engineered:{ label: 'Engineered Hardwood — real wood veneer, more stable',  sfPerBox: 20,   unit: 'boxes' },
+  tile:      { label: 'Tile (use Tile tab for count)',                         sfPerBox: 20,   unit: 'boxes' },
 };
 
 function FlooringCalc() {
@@ -215,9 +216,9 @@ function SidingCalc() {
         <Card title="Siding Results">
           <div className="grid grid-cols-2 gap-3">
             <ResultCard label="Squares (100 SF)" value={squares}              highlight />
-            <ResultCard label="Gross Wall Area"  value={grossWallSF}      unit="SF" />
-            <ResultCard label="Net Wall Area"    value={res.netWallArea}        unit="SF" small />
-            <ResultCard label="SF to Order"      value={Math.round(res.sidingSquares * 100)}   unit="SF" small />
+            <ResultCard label="Gross Wall Area"  value={grossWallSF}          unit="SF" />
+            <ResultCard label="Net Wall Area"    value={res.netWallArea}      unit="SF" small />
+            <ResultCard label="SF to Order"      value={Math.round(res.sidingSquares * 100)} unit="SF" small />
           </div>
         </Card>
         <Card title="Related Materials">
@@ -238,6 +239,16 @@ export function Flooring() {
   const [tab, setTab] = useState('floor');
   return (
     <div className="space-y-5">
+      <InfoBox title="Flooring Types: Which Should I Choose?" variant="blue" collapsible>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <div><strong>LVP / LVT</strong> (Luxury Vinyl Plank/Tile) — The most popular choice today. Waterproof, durable, looks like wood or stone, easy DIY install, and budget-friendly. Great for kitchens, bathrooms, and basements.</div>
+          <div><strong>Hardwood</strong> — Real wood planks. Beautiful and long-lasting (can be refinished). <em>Not</em> recommended in wet areas. More expensive. Needs to acclimate to your home&apos;s humidity before install.</div>
+          <div><strong>Laminate</strong> — A photo of wood printed on a fiberboard core with a wear layer on top. Cheaper than hardwood, looks similar but cannot be refinished. Not waterproof.</div>
+          <div><strong>Engineered Hardwood</strong> — A real wood veneer over plywood layers. More stable than solid hardwood in humid climates. Can sometimes be refinished once.</div>
+          <div><strong>Carpet</strong> — Soft, warm, quiet. Sold by the <em>square yard</em> (9 SF). Not ideal for kitchens or bathrooms. The calculator converts for you.</div>
+          <div><strong>Underlayment</strong> — A thin foam, felt, or rubber layer installed <em>under</em> the flooring. It reduces noise, adds cushion, and smooths minor subfloor imperfections. Most LVP and laminate requires it — some comes with it pre-attached.</div>
+        </div>
+      </InfoBox>
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
       </div>

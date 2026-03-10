@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
-import { Card, ResultCard } from '../../components/ui/Card';
-import { InputField } from '../../components/ui/InputField';
-import { SelectField, ToggleField } from '../../components/ui/SelectField';
-import { Tabs } from '../../components/ui/Button';
-import { calcDrywall, calcPaint } from '../../utils/calculations';
+import React, { useState, useMemo } from 'react';
+import { Card, ResultCard } from '../components/ui/Card';
+import { InputField } from '../components/ui/InputField';
+import { SelectField, ToggleField } from '../components/ui/SelectField';
+import { Tabs } from '../components/ui/Button';
+import { InfoBox } from '../components/ui/InfoBox';
+import { calcDrywall, calcPaint } from '../utils/calculations';
 
 const TABS = [
   { id: 'drywall', label: 'Drywall', icon: '🔲' },
@@ -23,7 +24,7 @@ function DrywallCalc() {
 
   const res = useMemo(() => calcDrywall(
     parseFloat(length)||0, parseFloat(width)||0, parseFloat(height)||0,
-    parseInt(doors)||0, parseInt(windows)||0, ceiling, (sheetW === '4x12' ? '4x12' : '4x8')
+    parseInt(doors)||0, parseInt(windows)||0, ceiling, sheetSqFt
   ), [length, width, height, doors, windows, ceiling, sheetSqFt]);
 
   // Additional supplies
@@ -60,17 +61,17 @@ function DrywallCalc() {
         <Card title="Drywall Results">
           <div className="grid grid-cols-2 gap-3">
             <ResultCard label={`${sheetW} Sheets`} value={res.sheets} highlight />
-            <ResultCard label="5-gal Joint Compound" value={res.jc5Gal} unit="buckets" />
-            <ResultCard label="Wall Area (net)" value={res.wallArea} unit="SF" small />
-            {ceiling && <ResultCard label="Ceiling Area" value={res.ceilingArea} unit="SF" small />}
-            <ResultCard label="Total Area"   value={res.totalArea}  unit="SF" small />
-            <ResultCard label="Drywall Tape" value={res.tapeLF}     unit="LF" small />
+            <ResultCard label="5-gal Joint Compound (\"Mud\") Buckets" value={res.jcBuckets} unit="buckets" />
+            <ResultCard label="Wall Area (net)" value={res.wallSqFt} unit="SF" small />
+            {ceiling && <ResultCard label="Ceiling Area" value={res.ceilingSqFt} unit="SF" small />}
+            <ResultCard label="Total Area"   value={res.totalSqFt}  unit="SF" small />
+            <ResultCard label="Drywall Tape" value={res.tapeFt} unit="LF (linear feet)" small />
           </div>
         </Card>
         <Card title="Hardware & Supplies">
           <div className="grid grid-cols-2 gap-3">
             <ResultCard label="Drywall Screws" value={screwLbs}   unit="lbs"  small />
-            <ResultCard label="Corner Bead"    value={cornerBead} unit="LF"   small />
+            <ResultCard label="Corner Bead (LF = linear feet)" value={cornerBead} unit="LF" small />
           </div>
           <p className="text-xs text-slate-400 mt-3">
             1 LF corner bead per door/window edge. One 5-gal bucket covers ~200 SF.
@@ -149,18 +150,18 @@ function PaintCalc() {
         <Card title="Paint Results">
           <div className="grid grid-cols-2 gap-3">
             <ResultCard label="Total Gallons" value={totalGals} highlight />
-            <ResultCard label="Paint Gallons" value={res.totalGallons} unit="gal" />
+            <ResultCard label="Paint Gallons" value={res.paintGallons} unit="gal" />
             {primer && <ResultCard label="Primer Gallons" value={primerGals} unit="gal" small />}
-            <ResultCard label="Paintable Area" value={totalArea} unit="SF" small />
-            <ResultCard label="Wall Area"     value={wallArea}    unit="SF" small />
-            {ceiling && <ResultCard label="Ceiling Area" value={ceilingArea} unit="SF" small />}
+            <ResultCard label="Paintable Area" value={res.totalSqFt} unit="SF" small />
+            <ResultCard label="Wall Area"     value={res.wallSqFt}    unit="SF" small />
+            {ceiling && <ResultCard label="Ceiling Area" value={res.ceilingSqFt} unit="SF" small />}
           </div>
         </Card>
 
         <Card title="Breakdown by Quarts">
           <div className="grid grid-cols-3 gap-3">
-            <ResultCard label="Walls Qts"   value={Math.ceil(res.wallGallons * 4)} small />
-            {ceiling && <ResultCard label="Ceiling Qts" value={Math.ceil(res.ceilingGallons * 4)} small />}
+            <ResultCard label="Walls Qts"   value={Math.ceil(res.paintGallons * 4 * (res.wallSqFt / res.totalSqFt))} small />
+            {ceiling && <ResultCard label="Ceiling Qts" value={Math.ceil(res.paintGallons * 4 * (res.ceilingSqFt / res.totalSqFt))} small />}
             <ResultCard label="Primer Qts"  value={primerGals * 4} small />
           </div>
           <p className="text-xs text-slate-400 mt-2">
@@ -176,6 +177,16 @@ export function Interior() {
   const [tab, setTab] = useState('drywall');
   return (
     <div className="space-y-5">
+      <InfoBox title="Drywall & Paint: What Everything Means" variant="blue" collapsible>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <div><strong>Drywall (Sheetrock)</strong> — The large flat panels (4×8 ft standard) that become your interior walls and ceilings. Made from a gypsum plaster core between two sheets of paper. Screwed to the wall framing, then finished to look smooth.</div>
+          <div><strong>Joint Compound (“Mud”)</strong> — The white paste used to fill and smooth the seams (joints) between drywall sheets. Comes in 5-gallon buckets. Applied in multiple thin coats, sanded between each. One bucket covers about 200 SF.</div>
+          <div><strong>Corner Bead</strong> — Metal or plastic strips installed on every <em>outside</em> corner (like the corners of window openings and doorways). They protect the edges from damage and make corners perfectly straight and sharp. Measured in <strong>LF (Linear Feet)</strong> — just length in feet.</div>
+          <div><strong>Drywall Tape</strong> — Paper or mesh tape pressed into the mud over every seam to prevent cracks. The calculator figures out how many linear feet you need based on your room dimensions.</div>
+          <div><strong>Primer</strong> — The first coat of paint that seals the surface and helps the finish coat stick evenly. Especially important on new drywall — skipping it shows blotchy results.</div>
+          <div><strong>Coverage Rate</strong> — How many square feet one gallon of paint covers. Standard interior paint covers about 350 SF per gallon. Rough/textured surfaces absorb more, so use a lower number.</div>
+        </div>
+      </InfoBox>
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
       </div>

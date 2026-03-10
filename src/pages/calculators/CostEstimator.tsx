@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from '../../components/ui/Card';
 import { InputField } from '../../components/ui/InputField';
+import { InfoBox } from '../../components/ui/InfoBox';
 import { Button } from '../../components/ui/Button';
 import { calcProjectCost } from '../../utils/calculations';
 import { PlusCircle, Trash2, Printer } from 'lucide-react';
-import { PriceIndexBanner } from '../../components/ui/PriceIndexBanner';
 
 interface Trade {
   id: string;
@@ -35,9 +35,11 @@ const DEFAULT_TRADES: Trade[] = [
   { id: '18', name: 'Landscaping / Grading',        quantity: 1,    unit: 'LS',  unitCost: 5000   },
   { id: '19', name: 'Driveway / Flatwork',          quantity: 500,  unit: 'SF',  unitCost: 8      },
   { id: '20', name: 'Permits & Inspections',        quantity: 1,    unit: 'LS',  unitCost: 4500   },
+  // Rural / remote add-ons — delete if on municipal water & sewer
+  { id: '21', name: 'Well (domestic water)',              quantity: 1,    unit: 'LS',  unitCost: 18000  },
+  { id: '22', name: 'Septic System',                     quantity: 1,    unit: 'LS',  unitCost: 15000  },
+  { id: '23', name: 'Propane Tank (1,000 gal, installed)', quantity: 1,  unit: 'LS',  unitCost: 2200   },
 ];
-
-const ALL_MATERIAL_SERIES = ['softwood_lumber', 'plywood', 'cement', 'ready_mix', 'steel', 'gypsum'] as const;
 
 function generateId() {
   return Math.random().toString(36).slice(2, 9);
@@ -81,7 +83,19 @@ export function CostEstimator() {
 
   return (
     <div className="space-y-5">
-      <PriceIndexBanner seriesKeys={ALL_MATERIAL_SERIES} title="Construction Material Market Trends" />
+      <InfoBox title="How to Use This Cost Estimator" variant="blue" collapsible>
+        <p className="mb-2">This is a <strong>line-item cost estimator</strong> — it adds up every part of your project so you can see the total cost before you break ground. Each row is one trade or task.</p>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-2 text-xs">
+          <div><strong>LS</strong> — Lump Sum. One fixed price for the whole job (e.g., plumbing rough-in = $14,000 LS means the plumber charges $14,000 total).</div>
+          <div><strong>SF</strong> — Square Feet. Used when pricing by area (e.g., flooring = $8/SF).</div>
+          <div><strong>CY</strong> — Cubic Yards. Used for concrete and excavation (dirt) volume.</div>
+          <div><strong>sq</strong> — Roofing Square = 100 square feet of roof surface.</div>
+          <div><strong>EA</strong> — Each. Used when pricing individual items (e.g., windows at $600 each).</div>
+          <div><strong>Contingency</strong> — A safety buffer for surprises. Every project has unexpected costs. 10% is the industry standard minimum — never skip this.</div>
+        </div>
+        <p className="mt-2 text-xs text-blue-700"><strong>How to customize:</strong> Click any cell in the table to edit it. Add your contractor&apos;s actual bids to replace the national-average placeholders.</p>
+      </InfoBox>
+
       {/* Header controls */}
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <div className="flex flex-wrap items-end gap-4">
@@ -97,7 +111,8 @@ export function CostEstimator() {
             <InputField label="House Size" value={sqft} onChange={setSqft} unit="SF" />
           </div>
           <div className="w-28">
-            <InputField label="Contingency %" value={contingency} onChange={setContingency} unit="%" />
+            <InputField label="Contingency %" value={contingency} onChange={setContingency} unit="%"
+              hint="Buffer for surprises (industry standard = 10%). Never skip this." />
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={resetToDefaults} size="sm">Reset</Button>
@@ -249,8 +264,10 @@ export function CostEstimator() {
 
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700 space-y-1">
             <p className="font-bold">⚠️ Estimate Basis</p>
-            <p>These are national average estimates. Actual costs vary significantly by
-            region, market conditions, material prices, and project complexity.</p>
+            <p>Based on 2024–2025 national averages (RS Means / NAHB Cost of Construction Survey). Actual costs vary
+            significantly by region, market conditions, and project complexity. Remote/mountain
+            sites typically run 10–20% above national average. Rural add-ons (well, septic, propane)
+            are included as separate line items — delete if on municipal utilities.</p>
             <p>Always get 3 bids from licensed contractors before committing.</p>
           </div>
         </div>

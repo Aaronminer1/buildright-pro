@@ -4,6 +4,7 @@ import { InputField } from '../../components/ui/InputField';
 import { SelectField } from '../../components/ui/SelectField';
 import { ToggleField } from '../../components/ui/SelectField';
 import { Tabs } from '../../components/ui/Button';
+import { InfoBox } from '../../components/ui/InfoBox';
 import {
   calcConcreteSlab, calcContinuousFooting, calcPadFooting,
   calcFoundationWall, calcColumn, calcGravel
@@ -11,12 +12,12 @@ import {
 import { PriceIndexBanner } from '../../components/ui/PriceIndexBanner';
 
 const TABS = [
-  { id: 'slab',   label: 'Slab',            icon: '▭' },
-  { id: 'footing',label: 'Continuous Footing',icon: '⊓' },
-  { id: 'pad',    label: 'Pad Footing',      icon: '◻' },
-  { id: 'wall',   label: 'Foundation Wall',  icon: '▐' },
-  { id: 'column', label: 'Column',           icon: '▮' },
-  { id: 'gravel', label: 'Gravel / Fill',    icon: '⊙' },
+  { id: 'slab',   label: 'Concrete Slab',      icon: '▭' },
+  { id: 'footing',label: 'Continuous Footing',  icon: '⊓' },
+  { id: 'pad',    label: 'Pad Footing',         icon: '◻' },
+  { id: 'wall',   label: 'Foundation Wall',     icon: '▐' },
+  { id: 'column', label: 'Column / Pier',       icon: '▮' },
+  { id: 'gravel', label: 'Gravel / Fill',       icon: '⊙' },
 ];
 
 const THICKNESS_OPTIONS = [
@@ -68,17 +69,24 @@ function SlabCalc() {
             options={THICKNESS_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
           />
           <InputField label="Waste Factor" value={waste} onChange={setWaste} unit="%" min={0} max={30}
-            hint="10% is standard; use 15% for complex shapes" />
+            hint="10% is standard. This accounts for spills, uneven ground, and over-ordering (always order a bit extra!)" />
           <ToggleField label="Include Rebar Estimate" checked={addRebar} onChange={setAddRebar} />
           {addRebar && (
+            <>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-700">
+                <strong>What is rebar?</strong> Rebar (reinforcing bar) is steel rod embedded in concrete to prevent cracking.
+                Plain concrete can crack under heavy loads or ground movement — rebar holds it together.
+                It's highly recommended for driveways, garage slabs, and anything that supports vehicles.
+              </div>
             <SelectField label="Rebar Spacing" value={rebarSpacing} onChange={setRebar}
-              options={[
-                { value: 12, label: '12" OC (#4 standard slab)' },
-                { value: 16, label: '16" OC (#4 light slab)' },
-                { value: 18, label: '18" OC (#3 light duty)' },
-                { value: 24, label: '24" OC (minimum reinforcement)' },
-              ]}
-            />
+                options={[
+                  { value: 12, label: '12" OC — standard slab (most common)' },
+                  { value: 16, label: '16" OC — lightly loaded slab' },
+                  { value: 18, label: '18" OC — light duty only' },
+                  { value: 24, label: '24" OC — minimum reinforcement' },
+                ]}
+              />
+            </>
           )}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
             <strong>Code note:</strong> IRC R506 requires a min 3.5" slab over a 4" compacted gravel base.
@@ -90,10 +98,13 @@ function SlabCalc() {
       <div className="space-y-4">
         <Card title="Concrete Volume">
           <div className="grid grid-cols-2 gap-3">
-            <ResultCard label="Cubic Yards"        value={result.cubicYards}          unit="CY" highlight />
-            <ResultCard label="With Waste"          value={result.cubicYardsWithWaste} unit="CY" />
-            <ResultCard label="Cubic Feet"          value={result.cubicFeet}           unit="CF" small />
-            <ResultCard label="Est. Material Cost"  value={`$${estCost}`}              unit="rough estimate" small />
+            <ResultCard label="Cubic Yards (CY)"      value={result.cubicYards}          unit="cubic yards" highlight />
+            <ResultCard label="With 10% Waste"         value={result.cubicYardsWithWaste} unit="CY ordered" />
+            <ResultCard label="Cubic Feet"             value={result.cubicFeet}           unit="CF" small />
+            <ResultCard label="Est. Material Cost"     value={`$${estCost}`}              unit="rough estimate" small />
+          </div>
+          <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700">
+            <strong>Order tip:</strong> Always order 10% more than your calculation. Concrete trucks charge extra for small leftovers, and running short mid-pour is worse than having a little extra.
           </div>
         </Card>
 
@@ -357,6 +368,37 @@ export function ConcreteFoundation() {
 
   return (
     <div className="space-y-5">
+      <InfoBox title="🏠 What is concrete used for in construction?" variant="blue" collapsible>
+        <p>Concrete is the mixture of cement, sand, gravel, and water that hardens into stone. It's used for foundations, floors, driveways, steps, and any surface that needs to bear weight.</p>
+        <p><strong>CY = Cubic Yard</strong> — concrete is ordered and priced by the cubic yard (CY). One cubic yard fills a box 3 ft × 3 ft × 3 ft. A standard 4-inch slab over a 20×20 ft room needs about 5 CY of concrete.</p>
+        <p><strong>Which tab do I need?</strong></p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Concrete Slab</div>
+            <div className="text-slate-500">Floor, driveway, patio, garage</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Continuous Footing</div>
+            <div className="text-slate-500">The concrete strip under your walls</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Pad Footing</div>
+            <div className="text-slate-500">A single block under a post or column</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Foundation Wall</div>
+            <div className="text-slate-500">Poured concrete basement walls</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Column / Pier</div>
+            <div className="text-slate-500">Round concrete pores for decks</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Gravel / Fill</div>
+            <div className="text-slate-500">Gravel base under a slab</div>
+          </div>
+        </div>
+      </InfoBox>
       <PriceIndexBanner seriesKeys={CONCRETE_SERIES} title="Concrete &amp; Cement Market Trends" />
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <Tabs tabs={TABS} active={tab} onChange={setTab} />

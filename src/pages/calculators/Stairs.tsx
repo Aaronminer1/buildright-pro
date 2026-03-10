@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, ResultCard } from '../../components/ui/Card';
 import { InputField } from '../../components/ui/InputField';
 import { calcStairs, formatFtIn } from '../../utils/calculations';
+import { InfoBox } from '../../components/ui/InfoBox';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 
 export function StairsCalc() {
@@ -27,9 +28,41 @@ export function StairsCalc() {
 
   return (
     <div className="space-y-5">
+      <InfoBox title="🏠 Stair Anatomy: What Do These Terms Mean?" variant="blue" collapsible>
+        <p>Building stairs sounds complicated, but there are really just a few parts to know:</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Riser</div>
+            <div className="text-slate-500">The vertical face of each step — how tall each step is. IRC code says max 8.25 inches per riser.</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Tread</div>
+            <div className="text-slate-500">The flat part you step on. Code requires min 10 inches deep. Deeper = more comfortable.</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Stringer</div>
+            <div className="text-slate-500">The angled side board that supports all the treads and risers. Usually cut from 2×12 lumber.</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Total Rise</div>
+            <div className="text-slate-500">The full height from one floor to the next — e.g., 8 feet for a typical floor.</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Total Run</div>
+            <div className="text-slate-500">How far the stairs extend horizontally along the floor.</div>
+          </div>
+          <div className="bg-white rounded p-2 border border-blue-200 text-xs">
+            <div className="font-bold text-blue-800">Nosing</div>
+            <div className="text-slate-500">The front edge of the tread that overhangs the riser. Makes stairs safer and easier to climb.</div>
+          </div>
+        </div>
+        <p className="mt-2"><strong>The golden rule:</strong> 2 × Riser Height + Tread Depth = 24–25". This is the "comfort formula" used by every building code. If this number is off, stairs feel awkward to use.</p>
+        <p><strong>What you need to enter:</strong> Just measure the height from the top of the floor below to the top of the floor above. That's your "floor-to-floor height." The calculator does the rest.</p>
+      </InfoBox>
+
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Inputs */}
-        <Card title="Stair Calculator" subtitle="IRC 2021 R311.7 — Stairways">
+        <Card title="Stair Calculator" subtitle="Based on IRC 2021 R311.7 code">
           <div className="space-y-4">
             <div>
               <div className="flex gap-2 mb-3">
@@ -61,17 +94,17 @@ export function StairsCalc() {
                   value={riseFt}
                   onChange={setRiseFt}
                   unit="ft"
-                  hint="Top of subfloor to top of subfloor (or finished-to-finished)"
+                  hint="Measure from the top of the lower floor to the top of the upper floor. Standard is 8 to 9 feet."
                 />
               )}
             </div>
 
             <InputField
-              label="Stair Width (clear width)"
+              label="Stair Width"
               value={stairWidth}
               onChange={setStairWidth}
               unit="in"
-              hint="IRC R311.7.1: min 36 inches clear width"
+              hint="How wide are the stairs from side to side? Building code requires at least 36 inches (3 feet)."
             />
 
             <InputField
@@ -79,21 +112,21 @@ export function StairsCalc() {
               value={treadDepth}
               onChange={setTreadDepthV}
               unit="in"
-              hint="IRC R311.7.5.2: min 10 inches. Comfort: 10.5–11 inches"
+              hint="How deep each step is (front-to-back). More = more comfortable. Code minimum is 10 inches. Most homes use 10.5 or 11 inches."
               min={9}
               max={14}
               step={0.25}
             />
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
-              <strong>IRC Stair Rules (R311.7):</strong>
+              <strong>Building Code Requirements (IRC R311.7):</strong>
               <ul className="mt-1 space-y-0.5 list-disc list-inside">
-                <li>Max riser: 8.25" | Min riser: 4"</li>
-                <li>Max variation between any two risers: 3/8"</li>
-                <li>Min tread depth: 10" (with nosing) / 11" (without)</li>
-                <li>Comfort formula: 2R + T = 24–25"</li>
-                <li>Handrail required when 4+ risers</li>
-                <li>Headroom: min 6'-8" clearance above tread nosings</li>
+                <li>Each step (riser) must be max 8¼" tall — too tall is a trip hazard</li>
+                <li>All steps must be the same height within ⅜" (uneven steps cause falls)</li>
+                <li>Each tread (step surface) must be min 10" deep</li>
+                <li>Comfort check: 2 × riser + tread = 24–25" (your results will show this)</li>
+                <li>Handrail required when you have 4 or more steps</li>
+                <li>Min 6'8" of headroom above every step</li>
               </ul>
             </div>
           </div>
@@ -116,23 +149,22 @@ export function StairsCalc() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <ResultCard label="Number of Risers" value={result.numberOfRisers} highlight />
-                <ResultCard label="Riser Height"     value={`${result.riserHeight}"`} />
-                <ResultCard label="Number of Treads" value={result.numberOfTreads}   />
-                <ResultCard label="Tread Depth"      value={`${result.treadDepth}"`} />
+                <ResultCard label="Number of Steps (risers)" value={result.numberOfRisers} highlight />
+                <ResultCard label="Each Step is" value={`${result.riserHeight}"`} unit="tall" />
+                <ResultCard label="Number of Treads" value={result.numberOfTreads} unit="flat surfaces" />
+                <ResultCard label="Tread Depth" value={`${result.treadDepth}"`} unit="front-to-back" />
               </div>
             </Card>
 
-            <Card title="Run & Stringer">
+            <Card title="Run &amp; Stringer Length">
               <div className="grid grid-cols-2 gap-3">
-                <ResultCard label="Total Horizontal Run" value={formatFtIn(result.totalRun)}  />
-                <ResultCard label="Stringer Length"      value={`${result.stringerLength} ft`} highlight />
-                <ResultCard label="Min Stringers"         value={result.minimumStringers}      unit="pcs"  small />
-                <ResultCard label="Handrail Required"     value={result.handrailRequired ? 'Yes' : 'No'}  small />
+                <ResultCard label="Total Horizontal Run" value={formatFtIn(result.totalRun)} note="floor space stairs take up" />
+                <ResultCard label="Stringer Length"      value={`${result.stringerLength} ft`} highlight note="length of angled side boards" />
+                <ResultCard label="Stringers Needed"     value={result.minimumStringers} unit="pcs" small />
+                <ResultCard label="Handrail Required"    value={result.handrailRequired ? '✅ Yes' : 'No'} small />
               </div>
               <p className="text-xs text-slate-400 mt-3">
-                Use 2×12 KD lumber for stringers. Ensure minimum 3.5" of net solid lumber
-                remains after cutting notches (IRC R311.7.10).
+                Stringers are the angled side boards that carry all the weight. Use 2×12 lumber. The stringer length tells you how long each board needs to be.
               </p>
             </Card>
 

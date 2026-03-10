@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react';
-import { Card, ResultCard } from '../../components/ui/Card';
-import { InputField } from '../../components/ui/InputField';
-import { Tabs } from '../../components/ui/Button';
-import { calcBoardFeet, round2 } from '../../utils/calculations';
-import { PriceIndexBanner } from '../../components/ui/PriceIndexBanner';
-
-const LUMBER_SERIES = ['softwood_lumber', 'plywood'] as const;
+import React, { useState, useMemo } from 'react';
+import { Card, ResultCard } from '../components/ui/Card';
+import { InputField } from '../components/ui/InputField';
+import { SelectField } from '../components/ui/SelectField';
+import { Tabs } from '../components/ui/Button';
+import { InfoBox } from '../components/ui/InfoBox';
+import { calcBoardFeet, round2 } from '../utils/calculations';
 
 const TABS = [
   { id: 'bf',    label: 'Board Feet',      icon: '🪵' },
@@ -47,10 +46,10 @@ function BoardFeetCalc() {
       <Card title="Inputs" subtitle="Board feet = (T in × W in × L ft) ÷ 12">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <InputField label="Thickness" value={thickness} onChange={setThickness} unit="in"
-              hint="Nominal e.g. 2×4 → 1.5 actual" />
-            <InputField label="Width"     value={width}     onChange={setWidth}     unit="in"
-              hint="Nominal e.g. 2×4 → 3.5 actual" />
+            <InputField label="Thickness (actual, not nominal)" value={thickness} onChange={setThickness} unit="in"
+              hint='Use the ACTUAL size. A "2×4" is really 1.5" thick — see the chart below.' />
+            <InputField label="Width (actual, not nominal)" value={width} onChange={setWidth} unit="in"
+              hint='A "2×4" is actually 3.5" wide. See the chart below for all sizes.' />
           </div>
           <InputField label="Length" value={length} onChange={setLength} unit="ft" />
           <InputField label="Number of Pieces" value={pieces} onChange={setPieces} step={1} min={1} />
@@ -262,6 +261,19 @@ export function LumberCalc() {
   const [tab, setTab] = useState('bf');
   return (
     <div className="space-y-5">
+      <InfoBox title="Understanding Lumber: Board Feet & Nominal Sizes" variant="blue" collapsible>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+          <div>
+            <p className="font-semibold mb-1">What is a Board Foot?</p>
+            <p>A board foot (BF) is a <strong>volume measurement</strong> for lumber: 1 foot long × 1 foot wide × 1 inch thick. Contractors order large quantities in board feet because it accounts for different thicknesses and widths in a single number.</p>
+            <p className="mt-1">At Home Depot you buy lumber by the piece. On a job site, you order by board feet.</p>
+          </div>
+          <div>
+            <p className="font-semibold mb-1">Why is a "2×4" not actually 2"×4"?</p>
+            <p>Lumber is named by its <strong>rough-sawn (nominal) size</strong> before it&apos;s dried and planed smooth. That process removes about ½ inch from each side. So a "2×4" is only 1.5" × 3.5" when you buy it — always use the <strong>actual dimensions</strong> when calculating.</p>
+          </div>
+        </div>
+      </InfoBox>
       <PriceIndexBanner seriesKeys={LUMBER_SERIES} title="Lumber Market Price Trends" />
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <Tabs tabs={TABS} active={tab} onChange={setTab} />

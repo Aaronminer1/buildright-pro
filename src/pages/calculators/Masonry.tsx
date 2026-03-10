@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
-import { Card, ResultCard } from '../../components/ui/Card';
-import { InputField } from '../../components/ui/InputField';
-import { SelectField } from '../../components/ui/SelectField';
-import { Tabs } from '../../components/ui/Button';
+import React, { useState, useMemo } from 'react';
+import { Card, ResultCard } from '../components/ui/Card';
+import { InputField } from '../components/ui/InputField';
+import { SelectField } from '../components/ui/SelectField';
+import { Tabs } from '../components/ui/Button';
+import { InfoBox } from '../components/ui/InfoBox';
 import { calcCMUBlocks } from '../../utils/calculations';
 
 const TABS = [
@@ -58,12 +59,11 @@ function CMUCalc() {
         <div className="grid grid-cols-2 gap-3">
           <ResultCard label="Blocks Needed"     value={result.blocks}           highlight />
           <ResultCard label="80 lb Mortar Bags" value={result.mortar80lbBags}   unit="bags" />
-          <ResultCard label="Grout (approx)"    value={groutCY}                 unit="CY" small />
+          <ResultCard label="Grout (approx — fills hollow cores)" value={groutCY} unit="CY (cubic yards)" small />
           <ResultCard label="Wall SF (net)"     value={Math.round((parseFloat(height)||0) * (parseFloat(length)||0) - (parseFloat(openings)||0))} unit="SF" small />
         </div>
         <p className="text-xs text-slate-400 mt-4">
-          Grout estimate assumes every-other cell filled. Full grouting requires ~2× grout.
-          Add rebar and rebar supports per structural plans.
+          <strong>Grout</strong> fills the hollow cores of blocks. Estimate assumes every-other cell filled (partial grouting). Full grouting (all cores filled) requires ~2× grout — required for structural/retaining walls or anywhere rebar is used.
         </p>
       </Card>
     </div>
@@ -173,6 +173,16 @@ export function Masonry() {
   const [tab, setTab] = useState('cmu');
   return (
     <div className="space-y-5">
+      <InfoBox title="Masonry Basics: CMU, Brick, Mortar & Grout" variant="blue" collapsible>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+          <div><strong>CMU Block</strong> (Concrete Masonry Unit) — The gray rectangular concrete blocks you see in foundations, garages, and retaining walls. The standard size is 8×8×16 inches. They have hollow cores that can be filled with grout and rebar for extra strength.</div>
+          <div><strong>Mortar</strong> — The cement paste mixed with sand that <em>holds blocks or bricks together</em> at the joints (gaps between each unit). Applied in thin 3⅛” layers. Think of it like concrete glue.</div>
+          <div><strong>Grout</strong> — A thinner liquid concrete poured to <em>fill the hollow cores</em> of CMU blocks. Grout (often with rebar inside) turns a hollow block wall into a solid reinforced structure — required for load-bearing or retaining walls.</div>
+          <div><strong>Courses</strong> — A horizontal row of blocks or bricks. Each CMU course is 8 inches tall (7.625" block + 3⅛" mortar). You can calculate how many courses you need by dividing wall height by 8".</div>
+          <div><strong>Veneer vs. Structural</strong> — Brick <em>veneer</em> is a decorative single layer attached to the outside of a framed wall — it&apos;s not load-bearing. <em>Structural</em> brick or CMU actually holds up the building.</div>
+          <div><strong>CY</strong> — Cubic Yards. Used to measure grout and concrete volume. 1 CY = 27 cubic feet = roughly a 3×3×3 foot cube.</div>
+        </div>
+      </InfoBox>
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
       </div>

@@ -3,6 +3,7 @@ import { Card, ResultCard } from '../../components/ui/Card';
 import { InputField } from '../../components/ui/InputField';
 import { SelectField } from '../../components/ui/SelectField';
 import { Tabs } from '../../components/ui/Button';
+import { InfoBox } from '../../components/ui/InfoBox';
 import { calcRoofPitch } from '../../utils/calculations';
 import { PITCH_REFERENCE } from '../../data/referenceData';
 
@@ -28,7 +29,29 @@ function PitchCalc() {
     (shingleType === 'metal' ? 'arch30' : shingleType) as '3tab'|'arch30'|'arch50'
   ), [pitchRise, buildingWidth, buildingLength, overhangIn, shingleType]);
 
+  const pitchNum = parseFloat(pitchRise) || 6;
+  const pitchDescription = pitchNum <= 3 ? 'Very low slope — almost flat. Common on additions and sheds.' :
+    pitchNum <= 5 ? 'Low slope — gentle pitch. Easy to walk on, good for ranch-style homes.' :
+    pitchNum <= 8 ? 'Standard slope — the most common for homes. Good balance of looks and drainage.' :
+    pitchNum <= 12 ? 'Steep slope — dramatic look, sheds snow well. Harder to work on safely.' :
+    'Very steep — requires special equipment. Mostly decorative peaks.';
+
   return (
+    <div className="space-y-5">
+      <InfoBox title="🏠 What is Roof Pitch? (and why does it matter?)" variant="blue" collapsible>
+        <p>Roof pitch describes <strong>how steep your roof is</strong>. It's written as two numbers like <strong>6:12</strong>, which means "for every 12 inches you go sideways, the roof rises 6 inches up."</p>
+        <p>Pitch affects three big things: <strong>how water and snow drain off</strong>, <strong>how much material you need</strong> (steeper = more surface area), and <strong>whether a roofer can walk on it safely</strong>.</p>
+        <p>Most American homes have a pitch between <strong>4:12 and 8:12</strong>. If you don't know your pitch, a roofer can measure it — or you can look it up on your home's blueprints.</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+          {[['2:12','Almost flat'],['4:12','Gentle slope'],['6:12','Standard'],['12:12','Very steep (45°)']].map(([p,d])=>(
+            <div key={p} className="bg-white rounded p-2 text-center border border-blue-200">
+              <div className="font-bold text-blue-800 text-sm">{p}</div>
+              <div className="text-xs text-slate-500">{d}</div>
+            </div>
+          ))}
+        </div>
+      </InfoBox>
+
     <div className="grid lg:grid-cols-2 gap-6">
       {/* Inputs */}
       <Card title="Inputs" subtitle="Simple gable or hip roof">
@@ -41,21 +64,21 @@ function PitchCalc() {
             <InputField
               label="Roof Pitch" value={pitchRise} onChange={setPitch}
               unit=":12" min={1} max={24} step={1}
-              hint="Rise in inches per foot of run"
+              hint={`For every 12" sideways, roof rises ${pitchRise}". Most homes: 4–8. ${pitchDescription}`}
             />
             <InputField
               label="Overhang" value={overhangIn} onChange={setOverhang}
               unit="in" min={0} step={1}
-              hint="Horizontal overhang from wall"
+              hint="How far roof extends past the wall (typically 12–18 inches)"
             />
           </div>
           <SelectField label="Roofing Type" value={shingleType}
             onChange={v => setShingle(v as typeof shingleType)}
             options={[
-              { value: '3tab',   label: '3-Tab (3 bundles/sq) — budget' },
-              { value: 'arch30', label: 'Architectural 30yr (3 bundles/sq)' },
-              { value: 'arch50', label: 'Architectural 50yr (4 bundles/sq)' },
-              { value: 'metal',  label: '🏗️ Standing Seam Metal (snow country, premium)' },
+              { value: '3tab',   label: '3-Tab — budget shingle, 20-25 yr life' },
+              { value: 'arch30', label: 'Architectural — popular choice, 30 yr warranty' },
+              { value: 'arch50', label: 'Architectural Premium — best shingle, 50 yr warranty' },
+              { value: 'metal',  label: '🏗️ Standing Seam Metal — lasts 50+ yrs, sheds snow' },
             ]}
           />
         </div>
@@ -65,9 +88,9 @@ function PitchCalc() {
       <div className="space-y-4">
         <Card title="Pitch Details">
           <div className="grid grid-cols-3 gap-3">
-            <ResultCard label="Pitch Ratio"   value={`${pitchRise}:12`}               highlight />
-            <ResultCard label="Angle"         value={`${result.pitchAngle}°`}         />
-            <ResultCard label="Multiplier"    value={result.pitchMultiplier}           />
+            <ResultCard label="Pitch Ratio"    value={`${pitchRise}:12`}               highlight />
+            <ResultCard label="Angle"          value={`${result.pitchAngle}°`}         />
+            <ResultCard label="Area Multiplier" value={result.pitchMultiplier}          note="applied to flat footprint" />
           </div>
           <div className="mt-3">
             <ResultCard label="Rafter Length (per side)" value={`${result.rafterLength} ft`} />
@@ -76,10 +99,13 @@ function PitchCalc() {
 
         <Card title="Roof Area">
           <div className="grid grid-cols-2 gap-3">
-            <ResultCard label="Roof Area"  value={result.roofAreaSqFt.toLocaleString()} unit="SF"     highlight />
-            <ResultCard label="Squares"    value={result.squares}                        unit="squares" />
+            <ResultCard label="Roof Surface Area"  value={result.roofAreaSqFt.toLocaleString()} unit="sq ft"  highlight />
+            <ResultCard label="Squares (for ordering)" value={result.squares}                   unit="squares" />
           </div>
-          <p className="text-xs text-slate-400 mt-3">1 square = 100 SF. Area includes overhangs.</p>
+          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700">
+            <strong>What is a square?</strong> Roofers measure material in "squares" — 1 square = 100 sq ft of roofing.
+            So if your roof is {result.roofAreaSqFt.toLocaleString()} sq ft, you need {result.squares} squares of shingles.
+          </div>
         </Card>
 
         {/* SVG pitch diagram */}
@@ -102,8 +128,8 @@ function PitchCalc() {
                 fontSize="12" fontWeight="bold" fill="#f59e0b">{pitchRise}:12</text>
             </svg>
             <div className="text-xs text-slate-500 space-y-2">
-              <div><strong className="text-slate-700">Walkable:</strong> {result.pitchAngle < 30 ? '✅ Yes' : '⚠️ Use roof jacks'}</div>
-              <div><strong className="text-slate-700">Multiplier:</strong> ×{result.pitchMultiplier}</div>
+              <div><strong className="text-slate-700">Walkable:</strong> {result.pitchAngle < 30 ? '✅ Yes — contractor can walk roof' : '⚠️ Too steep to walk — roof jacks or scaffold needed'}</div>
+              <div><strong className="text-slate-700">Area factor:</strong> ×{result.pitchMultiplier} <span className="text-slate-400">(slope adds {Math.round((result.pitchMultiplier - 1) * 100)}% more material vs flat)</span></div>
               <div><strong className="text-slate-700">Angle:</strong> {result.pitchAngle}°</div>
               <div className="text-slate-400">
                 {PITCH_REFERENCE.find(p => p.pitch === `${pitchRise}:12`)?.note || ''}
@@ -119,6 +145,7 @@ function PitchCalc() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
