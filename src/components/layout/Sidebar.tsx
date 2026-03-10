@@ -19,6 +19,10 @@ const calcSubLinks = [
   { to: '/calculators/insulation',  label: 'Insulation & Energy',    icon: '🌡️' },
   { to: '/calculators/hvac',        label: 'HVAC Load',              icon: '❄️' },
   { to: '/calculators/cost',        label: 'Cost Estimator',         icon: '💰' },
+  { to: '/calculators/hardware',    label: 'Hardware & Connectors',  icon: '🔩' },
+  { to: '/calculators/electrical',  label: 'Electrical Rough-In',    icon: '⚡' },
+  { to: '/calculators/plumbing',    label: 'Plumbing Rough-In',      icon: '🚿' },
+  { to: '/calculators/tile',        label: 'Tile & Wet Areas',       icon: '🔳' },
 ];
 
 const mainLinks = [

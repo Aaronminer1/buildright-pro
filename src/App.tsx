@@ -30,6 +30,10 @@ import { Flooring }           from './pages/calculators/Flooring';
 import { Insulation }         from './pages/calculators/Insulation';
 import { HVAC }               from './pages/calculators/HVAC';
 import { CostEstimator }      from './pages/calculators/CostEstimator';
+import { Hardware }           from './pages/calculators/Hardware';
+import { Electrical }         from './pages/calculators/Electrical';
+import { Plumbing }           from './pages/calculators/Plumbing';
+import { Tile }               from './pages/calculators/Tile';
 
 export default function App() {
   return (
@@ -66,6 +70,10 @@ export default function App() {
                 <Route path="insulation"  element={<Insulation />} />
                 <Route path="hvac"        element={<HVAC />} />
                 <Route path="cost"        element={<CostEstimator />} />
+                <Route path="hardware"    element={<Hardware />} />
+                <Route path="electrical"  element={<Electrical />} />
+                <Route path="plumbing"    element={<Plumbing />} />
+                <Route path="tile"        element={<Tile />} />
               </Route>
 
               {/* Catch-all */}
