@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, ResultCard } from '../../components/ui/Card';
 import { InputField } from '../../components/ui/InputField';
 import { SelectField } from '../../components/ui/SelectField';
-import { ToggleField } from '../../components/ui/SelectField';
 import { Tabs } from '../../components/ui/Button';
 import { InfoBox } from '../../components/ui/InfoBox';
 import { calcWallFraming, calcFloorJoists, calcRafters, boardFeet, round2 } from '../../utils/calculations';
@@ -17,102 +16,242 @@ const TABS = [
 ];
 
 // ─── Wall Framing ─────────────────────────────────────────────────────────────
+
+type WallType = 'exterior' | 'bearing' | 'partition';
+
+interface WallRow {
+  id: string;
+  name: string;
+  type: WallType;
+  len: string;
+  ht: string;
+  spacing: string;
+  lumber: '2x4' | '2x6';
+  doors: string;
+  wins: string;
+}
+
+const TYPE_META: Record<WallType, { label: string; tag: string; defaultLumber: '2x4' | '2x6'; note: string }> = {
+  exterior:  { label: 'Exterior',       tag: 'bg-amber-100 text-amber-800',  defaultLumber: '2x6', note: '2×6, 16″ OC — has windows & exterior doors' },
+  bearing:   { label: 'Load-Bearing',   tag: 'bg-blue-100 text-blue-800',    defaultLumber: '2x4', note: '2×4, 16″ OC — carries floor/roof loads, mostly door openings' },
+  partition: { label: 'Partition',      tag: 'bg-slate-100 text-slate-600',  defaultLumber: '2x4', note: '2×4, 16–24″ OC — room dividers, no structural load' },
+};
+
+let _uid = 100;
+function mkId() { return String(++_uid + Date.now()); }
+
+function makeRow(type: WallType, name = ''): WallRow {
+  return { id: mkId(), name, type, len: '', ht: '9', spacing: '16', lumber: TYPE_META[type].defaultLumber, doors: '0', wins: '0' };
+}
+
+const INITIAL_ROWS: WallRow[] = [
+  { id: 'r1', name: 'Exterior Walls — Floor 1',     type: 'exterior',  len: '220', ht: '9', spacing: '16', lumber: '2x6', doors: '2', wins: '12' },
+  { id: 'r2', name: 'Load-Bearing Interior — Fl 1', type: 'bearing',   len: '80',  ht: '9', spacing: '16', lumber: '2x4', doors: '3', wins: '0'  },
+  { id: 'r3', name: 'Partition Walls — Floor 1',    type: 'partition', len: '150', ht: '9', spacing: '16', lumber: '2x4', doors: '8', wins: '0'  },
+];
+
 function WallFraming() {
-  const [wallLen,   setWallLen]   = useState('40');
-  const [wallHt,    setWallHt]    = useState('9');
-  const [spacing,   setSpacing]   = useState('16');
-  const [doors,     setDoors]     = useState('2');
-  const [windows,   setWindows]   = useState('4');
-  const [isCorner,  setIsCorner]  = useState(false);
-  const [lumber,    setLumber]    = useState('2x4');
+  const [rows, setRows] = useState<WallRow[]>(INITIAL_ROWS);
 
-  const lumberWidthIn = lumber === '2x4' ? 3.5 : 5.5;
+  const update = useCallback((id: string, patch: Partial<WallRow>) =>
+    setRows(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r)), []);
 
-  const result = useMemo(() => calcWallFraming(
-    parseFloat(wallLen) || 0,
-    parseFloat(wallHt)  || 0,
-    parseInt(spacing)   || 16,
-    parseInt(doors)     || 0,
-    parseInt(windows)   || 0,
-    isCorner,
-    lumberWidthIn
-  ), [wallLen, wallHt, spacing, doors, windows, isCorner, lumberWidthIn]);
+  const addRow = (type: WallType) => setRows(prev => [...prev, makeRow(type)]);
+  const remove = (id: string)     => setRows(prev => prev.filter(r => r.id !== id));
 
-  // Board-foot breakdowns — now directly from result (calcWallFraming uses correct width)
-  const studsBF  = round2(boardFeet(1.5, lumberWidthIn, parseFloat(wallHt) || 0, result.studs));
-  const platesBF = round2(boardFeet(1.5, lumberWidthIn, parseFloat(wallLen) || 0, 3));
+  const results = useMemo(() => rows.map(r => {
+    const lw = r.lumber === '2x4' ? 3.5 : 5.5;
+    const res = calcWallFraming(
+      parseFloat(r.len) || 0, parseFloat(r.ht) || 0,
+      parseInt(r.spacing) || 16, parseInt(r.doors) || 0,
+      parseInt(r.wins) || 0, false, lw
+    );
+    const studBF  = round2(boardFeet(1.5, lw, parseFloat(r.ht) || 0, res.studs));
+    const plateBF = round2(boardFeet(1.5, lw, parseFloat(r.len) || 0, 3));
+    return { ...res, studBF, plateBF, totalBF: round2(studBF + plateBF) };
+  }), [rows]);
+
+  const totals = useMemo(() => rows.reduce((t, r, i) => {
+    const res = results[i]!;
+    t.studs += res.studs;
+    if (r.lumber === '2x4') { t.platesLF_2x4 += res.totalPlateLF; t.bf_2x4 = round2(t.bf_2x4 + res.totalBF); }
+    else                    { t.platesLF_2x6 += res.totalPlateLF; t.bf_2x6 = round2(t.bf_2x6 + res.totalBF); }
+    return t;
+  }, { studs: 0, platesLF_2x4: 0, platesLF_2x6: 0, bf_2x4: 0, bf_2x6: 0 }), [rows, results]);
+
+  const si = 'w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400';
+  const ss = 'w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white';
 
   return (
-    <div className="space-y-5">
-      <InfoBox title="🏠 Framing Basics: What Are We Counting?" variant="blue" collapsible>
-        <p><strong>Studs</strong> are the vertical wooden boards that make up your walls — think of them as the skeleton of the house. Standard size is a 2×4 (real size: 1.5” × 3.5”). Exterior walls often use 2×6 for more insulation space.</p>
-        <p><strong>"OC" (On Center)</strong> means the distance measured from the <em>center</em> of one stud to the center of the next. "16” OC" (the most common) means studs are placed every 16 inches apart. This spacing matters because drywall and sheathing sheets are sized to align with these spacings.</p>
-        <p><strong>Board Feet (BF)</strong> is how lumber is sold in bulk — it's a volume measurement. 1 board foot = a board 1 inch thick, 12 inches wide, and 12 inches long. Larger or longer boards have more board feet.</p>
-        <p><strong>Plates</strong> are the horizontal boards at the top and bottom of each wall. Each wall has 3 plates: 1 bottom plate and 2 top plates (doubled for strength).</p>
+    <div className="space-y-4">
+      <InfoBox title="🏠 Wall Schedule — Why separate sections matter" variant="blue" collapsible>
+        <p>A real house has <strong>three distinct wall types</strong> that use different lumber, heights, and opening counts. Adding them all into one number gives wrong stud counts and a useless lumber order.</p>
+        <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+          <li><strong>Exterior walls</strong> — 2x6, has windows and exterior doors. Add one row per floor because wall height often changes (9ft main floor → 8ft upper floors).</li>
+          <li><strong>Load-bearing interior</strong> — walls that carry the floor above. Mostly door openings, no windows, need 16 in OC minimum.</li>
+          <li><strong>Partition walls</strong> — non-structural room dividers. Can use 24 in OC to save ~15% on lumber. No windows.</li>
+        </ul>
+        <p className="mt-2">Lumber yards fill orders by size — they need your 2x4 total and 2x6 total separately. This calculator gives you both.</p>
       </InfoBox>
 
-    <div className="grid lg:grid-cols-2 gap-6">
-      <Card title="Inputs" subtitle="Single wall section">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Wall Length"  value={wallLen}  onChange={setWallLen}  unit="ft" min={0} />
-            <InputField label="Wall Height"  value={wallHt}   onChange={setWallHt}   unit="ft" min={0}
-              hint="Typically 8, 9, or 10 ft" />
+      {/* Wall type legend */}
+      <div className="grid grid-cols-3 gap-2">
+        {(Object.entries(TYPE_META) as [WallType, typeof TYPE_META[WallType]][]).map(([k, m]) => (
+          <div key={k} className={`rounded-xl border p-3 text-xs ${
+            k === 'exterior'  ? 'border-amber-200 bg-amber-50'  :
+            k === 'bearing'   ? 'border-blue-200 bg-blue-50'    :
+                                'border-slate-200 bg-slate-50'
+          }`}>
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.tag}`}>{m.label}</span>
+            <p className="mt-1.5 text-slate-500 leading-relaxed">{m.note}</p>
           </div>
-          <SelectField label="Stud Spacing" value={spacing} onChange={setSpacing}
-            options={[
-              { value: 12, label: '12" OC — very strong, heavy load or tile walls' },
-              { value: 16, label: '16" OC — standard for almost all homes' },
-              { value: 24, label: '24" OC — uses less lumber, still code-compliant' },
-            ]}
-          />
-          <SelectField label="Lumber Size" value={lumber} onChange={setLumber}
-            options={[
-              { value: '2x4', label: '2×4 — standard walls (3.5" deep)' },
-              { value: '2x6', label: '2×6 — exterior walls with more insulation (5.5" deep)' },
-            ]}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Door Openings" value={doors}   onChange={setDoors}   step={1} min={0} />
-            <InputField label="Window Openings" value={windows} onChange={setWindows} step={1} min={0} />
-          </div>
-          <ToggleField label="Has Exterior Corner" checked={isCorner} onChange={setIsCorner}
-            hint="A corner where two exterior walls meet needs 3 studs for nailing. Turn this on if calculating a corner wall." />
-        </div>
-      </Card>
-
-      <div className="space-y-4">
-        <Card title="Stud Count">
-          <div className="grid grid-cols-2 gap-3">
-            <ResultCard label="Total Studs Needed" value={result.studs}         highlight />
-            <ResultCard label="Board Feet (studs)"  value={studsBF}           unit="BF" note="lumber volume" />
-          </div>
-          <div className="mt-3 text-xs text-slate-500 space-y-0.5">
-            <div>Field studs: {Math.ceil((parseFloat(wallLen)||0) / (parseInt(spacing)||16) * 12) + 1}</div>
-            <div>Opening studs (around doors/windows): {(parseInt(doors)||0 + parseInt(windows)||0) * 4}</div>
-            {isCorner && <div>Corner studs: 3</div>}
-          </div>
-        </Card>
-
-        <Card title="Plates & Lumber">
-          <div className="grid grid-cols-3 gap-3">
-            <ResultCard label="Top Plates (2)" value={result.topPlatesLF}   unit="LF" small />
-            <ResultCard label="Bottom Plate"   value={result.bottomPlateLF} unit="LF" small />
-            <ResultCard label="Total Plates"   value={result.totalPlateLF}  unit="LF" small />
-          </div>
-          <div className="mt-3">
-            <ResultCard label="Total Lumber (studs + all plates)" value={round2(studsBF + platesBF)} unit="Board Feet" highlight />
-          </div>
-        </Card>
-
-        <Card>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-            <strong>Quick rule:</strong> For 16" OC walls, count 1 stud per linear foot + 10% for waste.
-            For 24" OC (advanced framing), count 0.75 studs/LF — saves ~15% on lumber costs.
-          </div>
-        </Card>
+        ))}
       </div>
-    </div>
+
+      {/* Wall rows */}
+      <div className="space-y-3">
+        {rows.map((row, i) => {
+          const res = results[i]!;
+          const meta = TYPE_META[row.type];
+          return (
+            <Card key={row.id}>
+              <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-100">
+                <input
+                  value={row.name}
+                  onChange={e => update(row.id, { name: e.target.value })}
+                  placeholder={`${meta.label} — give this section a name (e.g. Floor 1, Floor 2)`}
+                  className="flex-1 text-sm font-medium text-slate-800 bg-transparent focus:outline-none border-b border-transparent focus:border-amber-400 pb-0.5"
+                />
+                <span className={`hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium ${meta.tag}`}>{meta.label}</span>
+                <button onClick={() => remove(row.id)}
+                  className="text-slate-300 hover:text-red-400 transition-colors ml-1 text-base leading-none font-bold flex-shrink-0">×</button>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Wall Type</label>
+                  <select value={row.type}
+                    onChange={e => {
+                      const t = e.target.value as WallType;
+                      update(row.id, { type: t, lumber: TYPE_META[t].defaultLumber });
+                    }}
+                    className={ss}>
+                    <option value="exterior">Exterior</option>
+                    <option value="bearing">Load-Bearing</option>
+                    <option value="partition">Partition</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Length (ft)</label>
+                  <input type="number" value={row.len} min={0}
+                    onChange={e => update(row.id, { len: e.target.value })}
+                    className={si} placeholder="0" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Height (ft)</label>
+                  <input type="number" value={row.ht} min={0}
+                    onChange={e => update(row.id, { ht: e.target.value })}
+                    className={si} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Lumber</label>
+                  <select value={row.lumber}
+                    onChange={e => update(row.id, { lumber: e.target.value as '2x4' | '2x6' })}
+                    className={ss}>
+                    <option value="2x4">2×4</option>
+                    <option value="2x6">2×6</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Spacing</label>
+                  <select value={row.spacing}
+                    onChange={e => update(row.id, { spacing: e.target.value })}
+                    className={ss}>
+                    <option value="12">12 in OC</option>
+                    <option value="16">16 in OC</option>
+                    <option value="24">24 in OC</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Doors / Windows</label>
+                  <div className="flex gap-1">
+                    <input type="number" value={row.doors} min={0} step={1} title="Doors"
+                      onChange={e => update(row.id, { doors: e.target.value })}
+                      className={si + ' text-center'} placeholder="D" />
+                    <input type="number" value={row.wins} min={0} step={1} title="Windows"
+                      onChange={e => update(row.id, { wins: e.target.value })}
+                      className={si + ' text-center'} placeholder="W" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Per-section mini results */}
+              <div className="grid grid-cols-4 gap-2 bg-slate-50 rounded-xl p-3 text-center">
+                <div>
+                  <div className="text-xl font-bold text-slate-800">{res.studs}</div>
+                  <div className="text-xs text-slate-500">Studs</div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-slate-800">{res.totalPlateLF}</div>
+                  <div className="text-xs text-slate-500">Plates (LF)</div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-slate-800">{res.studBF}</div>
+                  <div className="text-xs text-slate-500">Stud BF</div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-amber-600">{res.totalBF}</div>
+                  <div className="text-xs text-slate-500">Total BF</div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Add buttons */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-slate-500">Add section:</span>
+        <button onClick={() => addRow('exterior')}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors">
+          + Exterior Wall
+        </button>
+        <button onClick={() => addRow('bearing')}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
+          + Load-Bearing Interior
+        </button>
+        <button onClick={() => addRow('partition')}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+          + Partition Wall
+        </button>
+        {rows.length > 0 && (
+          <button onClick={() => setRows([])}
+            className="ml-auto px-3 py-1.5 rounded-lg text-xs text-red-400 hover:bg-red-50 transition-colors">
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {/* Grand totals */}
+      {rows.length > 0 && (
+        <Card title="Project Lumber Totals" subtitle="Ready to hand to your lumber yard">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <ResultCard label="Total Studs" value={totals.studs} highlight />
+            {totals.platesLF_2x4 > 0 && <ResultCard label="2x4 Plates" value={round2(totals.platesLF_2x4)} unit="LF" small />}
+            {totals.platesLF_2x6 > 0 && <ResultCard label="2x6 Plates" value={round2(totals.platesLF_2x6)} unit="LF" small />}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {totals.bf_2x4 > 0 && <ResultCard label="2x4 Lumber" value={totals.bf_2x4} unit="BF" />}
+            {totals.bf_2x6 > 0 && <ResultCard label="2x6 Lumber" value={totals.bf_2x6} unit="BF" />}
+            <ResultCard label="Total Board Feet" value={round2(totals.bf_2x4 + totals.bf_2x6)} unit="BF" highlight />
+          </div>
+          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+            <strong>Order tip:</strong> Add 10% waste to each lumber size separately. Upper floor exterior 
+            walls typically have no exterior doors — adjust door counts per section. Partition walls 
+            can often run 24 in OC, saving ~15% on their lumber order.
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
@@ -123,6 +262,7 @@ function FloorJoistCalc() {
   const [roomLen, setRoomLen] = useState('24');
   const [spacing, setSpacing] = useState('16');
   const [size,    setSize]    = useState('2x10');
+  const [floors,  setFloors]  = useState('1');
 
   const result = useMemo(() => calcFloorJoists(
     parseFloat(span) || 0,
@@ -130,10 +270,14 @@ function FloorJoistCalc() {
     parseInt(spacing) || 16
   ), [span, roomLen, spacing]);
 
-  const widthIn = { '2x6': 5.5, '2x8': 7.25, '2x10': 9.25, '2x12': 11.25 }[size] ?? 9.25;
-  const totalBF = round2(boardFeet(1.5, widthIn, parseFloat(span) || 0, result.count));
-  const rimBF   = round2(boardFeet(1.5, widthIn, result.rimBoardLF));
-  const bridging = Math.ceil(result.count * 2); // 2 rows per bay typically
+  const floorCount  = Math.max(1, parseInt(floors) || 1);
+  const widthIn     = { '2x6': 5.5, '2x8': 7.25, '2x10': 9.25, '2x12': 11.25 }[size] ?? 9.25;
+  const totalBF     = round2(boardFeet(1.5, widthIn, parseFloat(span) || 0, result.count) * floorCount);
+  const rimBF       = round2(boardFeet(1.5, widthIn, result.rimBoardLF) * floorCount);
+  const bridging    = Math.ceil(result.count * 2) * floorCount;
+  const totalJoists = result.count * floorCount;
+  const totalLF     = round2(result.totalLF * floorCount);
+  const totalRim    = round2(result.rimBoardLF * floorCount);
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
@@ -141,47 +285,60 @@ function FloorJoistCalc() {
         <div className="space-y-4">
           <InputField label="Joist Span (clear span)" value={span} onChange={setSpan} unit="ft"
             hint="Horizontal distance between bearing points (beams, walls)" />
-          <InputField label="Room Length" value={roomLen} onChange={setRoomLen} unit="ft"
-            hint="Length parallel to joists (determines joist count)" />
+          <InputField label="Bay Length (parallel to joists)" value={roomLen} onChange={setRoomLen} unit="ft"
+            hint="Length of the floor bay — determines joist count" />
           <SelectField label="Joist Spacing" value={spacing} onChange={setSpacing}
             options={[
-              { value: 12, label: '12" OC' },
-              { value: 16, label: '16" OC (standard)' },
-              { value: 24, label: '24" OC' },
+              { value: 12, label: '12 in OC' },
+              { value: 16, label: '16 in OC (standard)' },
+              { value: 24, label: '24 in OC' },
             ]}
           />
           <SelectField label="Joist Size" value={size} onChange={setSize}
             options={[
-              { value: '2x6',  label: '2×6' },
-              { value: '2x8',  label: '2×8' },
-              { value: '2x10', label: '2×10 (most common)' },
-              { value: '2x12', label: '2×12' },
+              { value: '2x6',  label: '2x6' },
+              { value: '2x8',  label: '2x8' },
+              { value: '2x10', label: '2x10 (most common)' },
+              { value: '2x12', label: '2x12' },
             ]}
           />
+          <div>
+            <InputField label="Number of Identical Floor Levels" value={floors} onChange={setFloors}
+              unit="floors" min={1} step={1}
+              hint="3-story house: enter 3 to multiply totals by 3 (if all floors use the same span and bay length)" />
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+              If floors have different spans or bay sizes, run this calculator once per floor and add the results.
+            </p>
+          </div>
         </div>
       </Card>
 
       <div className="space-y-4">
-        <Card title="Results">
+        <Card title={floorCount > 1 ? `Results — ${floorCount} Floors Combined` : 'Results'}>
           <div className="grid grid-cols-2 gap-3">
-            <ResultCard label="Joist Count"    value={result.count}      highlight />
-            <ResultCard label="Total Joist LF" value={result.totalLF}    unit="LF" />
-            <ResultCard label="Rim Board LF"   value={result.rimBoardLF} unit="LF" small />
-            <ResultCard label="Bridging Sets"  value={bridging}          unit="pieces" small />
+            <ResultCard label="Total Joists"      value={totalJoists}  highlight />
+            <ResultCard label="Total Joist LF"    value={totalLF}      unit="LF" />
+            <ResultCard label="Total Rim Board LF" value={totalRim}    unit="LF" small />
+            <ResultCard label="Bridging Pieces"   value={bridging}     unit="pcs" small />
           </div>
+          {floorCount > 1 && (
+            <div className="mt-3 text-xs text-slate-500 border-t border-slate-100 pt-3">
+              Per floor: {result.count} joists / {result.totalLF} LF / {Math.ceil(result.count * 2)} bridging pcs
+            </div>
+          )}
         </Card>
         <Card title="Board Feet">
           <div className="grid grid-cols-2 gap-3">
-            <ResultCard label="Joists BF"  value={totalBF} unit="BF" highlight />
-            <ResultCard label="Rim BF"     value={rimBF}   unit="BF" />
+            <ResultCard label="Joists BF" value={totalBF} unit="BF" highlight />
+            <ResultCard label="Rim BF"    value={rimBF}   unit="BF" />
           </div>
         </Card>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-semibold text-slate-600 mb-2">Max Spans at this spacing (SYP #2):</p>
+          <p className="text-xs font-semibold text-slate-600 mb-2">Max Spans at 16 in OC (SYP #2):</p>
           <div className="text-xs text-slate-500 space-y-1">
-            <div>2×8 @ 16" OC: 11'–7" max</div>
-            <div>2×10 @ 16" OC: 14'–9" max</div>
-            <div>2×12 @ 16" OC: 17'–11" max</div>
+            <div>2x8: 11ft 7in max</div>
+            <div>2x10: 14ft 9in max</div>
+            <div>2x12: 17ft 11in max</div>
           </div>
           <p className="text-xs text-slate-400 mt-2">Verify with IRC Table R502.3.1</p>
         </div>

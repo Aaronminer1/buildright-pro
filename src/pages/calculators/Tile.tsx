@@ -37,13 +37,14 @@ function TileLayout() {
                    (tileSize === '24x48' || tileSize === '12x24') ? 0.10 : 0.08;
 
   const tileSqFt  = sqFt * (1 + wastePct);
+
   const tileDims = useMemo(() => {
     const parts = tileSize.split('x');
     return { w: parseInt(parts[0])||12, h: parseInt(parts[1])||12 };
   }, [tileSize]);
 
   const tileArea    = (tileDims.w / 12) * (tileDims.h / 12);  // SF per tile
-  const tileCount   = Math.ceil(tileSqFt / tileArea);
+  const tileCount   = Math.ceil(tileSqFt / tileArea);  // typical box = ~10 tiles
   const boxesNeeded = Math.ceil(tileSqFt / (tileArea * 10));
 
   return (
@@ -52,10 +53,10 @@ function TileLayout() {
         <p>Tile is beautiful, durable, and completely unforgiving of mistakes. Water gets behind improperly installed tile and destroys the structure underneath — mold, rot, subfloor failure. Before tile goes DOWN, you need the right <strong>substrate</strong> (what the tile sticks to), the right <strong>waterproofing</strong>, and the right <strong>layout planning</strong>.</p>
         <p><strong>Never tile directly onto drywall in wet areas.</strong> Drywall (even "greenboard") is not waterproof. You need cement board, or a waterproof membrane system. The tile mortar itself is NOT waterproof.</p>
         <TermDef term="Substrate" def="The surface the tile bonds to. In dry areas: cement board or drywall. In wet areas (shower, tub surround): cement board + waterproof membrane, or a foam shower pan system (like Wedi or Schluter Kerdi)." />
-        <TermDef term="Grout joint" def='The gap between tiles. Smaller joints (1/16") are for rectified tiles with very straight edges. Larger joints (3/16" – 1/4") accommodate slight size variations and make layout forgiving.' />
-        <TermDef term="Rectified tile" def='Tile that has been precision-cut after firing so all edges are exactly the same size. Allows very tight grout joints (1/16"). Often used for large format tiles (24"×24" and up).' />
+        <TermDef term="Grout joint" def={`The gap between tiles. Smaller joints (1/16") are for rectified tiles with very straight edges. Larger joints (3/16" – 1/4") accommodate slight size variations and make layout forgiving.`} />
+        <TermDef term="Rectified tile" def={`Tile that has been precision-cut after firing so all edges are exactly the same size. Allows very tight grout joints (1/16"). Often used for large format tiles (24"×24" and up).`} />
         <TermDef term="Lippage" def="When the edge of one tile is higher than the adjacent tile, creating a trip hazard and unsightly look. Caused by uneven substrate, bad trowel technique, or warped tiles. Large tiles are most prone to this." />
-        <TermDef term="Offset / brick pattern" def='Also called a "running bond" — each row is offset by half a tile, like brick. Looks great but creates more cut tiles and more waste (especially with large-format tiles).' />
+        <TermDef term="Offset / brick pattern" def={`Also called a "running bond" — each row is offset by half a tile, like brick. Looks great but creates more cut tiles and more waste (especially with large-format tiles).`} />
         <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded">⚠️ <strong>Layout first, cut last.</strong> Always dry-lay your tile pattern (no mortar) from the center of the room outward before you set a single tile. You want even cuts at both walls — never a sliver piece at one end.</p>
       </InfoBox>
 
@@ -146,7 +147,7 @@ function Substrate() {
   // Cement board sheets
   const sheetSF    = cbType === 'large' ? 32 : 15;  // 3×5 = 15 SF or 4×8 = 32 SF
   const sheets     = Math.ceil(totalSF * 1.1 / sheetSF);  // 10% waste
-  const screws     = Math.ceil(totalSF * 3);    // ~3 screws per SF
+  const screws     = Math.ceil(totalSF * 3);    // ~3 screws per SF        // 1 SF mesh tape per SF of seam area
   const seam_tape_lf = Math.ceil((totalSF / sheetSF) * 8);  // avg perimeter per sheet
 
   // Waterproof membrane (Schluter Kerdi, RedGard, etc.)
@@ -159,7 +160,7 @@ function Substrate() {
         <p>This is the most important step nobody talks about. The tile is only as good as what it's bonded to. In kitchens and bathrooms, you need a <strong>rigid, stable, dimensionally consistent surface</strong> that won't swell, flex, or rot when it gets wet.</p>
         <p><strong>Cement board</strong> (Durock, HardieBacker, Wonderboard) is a cementitious panel that doesn't absorb water or flex. Screw it to the studs or subfloor, tape the seams with alkaline-resistant mesh tape + thinset, then tile over it.</p>
         <p><strong>Important clarification:</strong> Cement board is <em>water-resistant</em>, not waterproof. For direct-water areas (shower floor, tub surround), you need a <strong>waterproof membrane</strong> OVER the cement board, or a foam system that IS the substrate AND waterproofing in one (like Schluter Kerdi or Wedi).</p>
-        <TermDef term="HardieBacker" def='Popular brand of cement board. 1/2" for walls; 1/4" for floors. Cut with a carbide score-and-snap blade or a diamond blade on a circular saw (wear a respirator — silica dust is serious).' />
+        <TermDef term="HardieBacker" def={`Popular brand of cement board. 1/2" for walls; 1/4" for floors. Cut with a carbide score-and-snap blade or a diamond blade on a circular saw (wear a respirator — silica dust is serious).`} />
         <TermDef term="RedGard / HydroBan" def="Liquid-applied waterproof membranes (roll or brush on like paint). 2 coats needed. Pink when wet, red when dry — so you know when it's cured. Much cheaper than Kerdi but requires correct technique." />
         <TermDef term="Schluter Kerdi" def="Sheet waterproofing membrane that bonds directly to the cement board. Expensive but foolproof — used by most tile pros. Kerdi-Board systems replace cement board entirely." />
         <TermDef term="Mesh tape (alkaline-resistant)" def="Used to tape cement board seams before applying thinset. Must be alkaline-resistant (yellow/orange, not standard fiberglass mesh) because regular mesh tape degrades in cement." />
@@ -192,7 +193,7 @@ function Substrate() {
             <div className="grid grid-cols-2 gap-3">
               <ResultCard label="Cement Board Sheets" value={sheets} highlight />
               <ResultCard label="Total Tile Area" value={Math.round(totalSF)} unit="SF" />
-              <ResultCard label='CB Screws (1.25" galv.)' value={screws} unit="pcs" small />
+              <ResultCard label={`CB Screws (1.25" galv.)`} value={screws} unit="pcs" small />
               <ResultCard label="Alkaline Mesh Tape" value={seam_tape_lf} unit="LF" small />
               {membrane && (
                 <>
@@ -241,10 +242,7 @@ function ThinsetGrout() {
     return { w: parseInt(parts[0])||12, h: parseInt(parts[1])||12 };
   }, [tileSize]);
   const jointIn    = jointSize === '1/16' ? 0.0625 : jointSize === '1/8' ? 0.125 : jointSize === '3/16' ? 0.1875 : 0.25;
-  const groutDepthIn = 0.375;  // ~3/8" deep joint (for 1/2" cement board)
-  // Grout volume formula: SF × (J/(T+J) + J/(T+J)) × depth × 144 / 128 oz/lb / ??
-  // Simplified: coverage ≈ (tile W × tile H) / (joint × depth) — manufacturer tables
-  // Typical: 12×12 @ 3/16 joint ≈ 100 SF per 25 lb sanded grout
+  const groutDepthIn = 0.375;
   const groutSF100 = (tileDims.w * tileDims.h) / (jointIn * groutDepthIn * 10);
   const groutLbs   = Math.ceil(sf / Math.max(groutSF100, 5) * 1.15);
 
@@ -262,8 +260,8 @@ function ThinsetGrout() {
           <li><strong>Large-format tile mortar</strong>: Specifically formulated to prevent large tiles from sagging on walls or cracking on floors. Required for tiles over 15".</li>
         </ul>
         <p><strong>Grout</strong> fills the joints between tiles. Two main types:</p>
-        <TermDef term="Sanded grout" def='Has sand mixed in. Required for joints wider than 1/8" — the sand prevents cracking in wider joints. Do not use on polished, soft stone — sand will scratch the tile surface.' />
-        <TermDef term="Unsanded grout" def='No sand. Required for joints 1/16" – 1/8" and for polished stone, glass tile, and marble where sand would scratch the surface.' />
+        <TermDef term="Sanded grout" def={`Has sand mixed in. Required for joints wider than 1/8" — the sand prevents cracking in wider joints. Do not use on polished, soft stone — sand will scratch the tile surface.`} />
+        <TermDef term="Unsanded grout" def={`No sand. Required for joints 1/16" – 1/8" and for polished stone, glass tile, and marble where sand would scratch the surface.`} />
         <TermDef term="Epoxy grout" def="Two-part system (not cement based). Extremely stain and chemical resistant — commercial kitchens and hospitals. Expensive, hard to work with (very unforgiving open time), but lasts decades and never stains." />
         <TermDef term="Thinset trowel notch" def="You apply thinset with a notched trowel. The notch size determines how thick the mortar bed is — bigger tiles need deeper notch (more mortar). Wrong notch = hollow spots = cracked tile." />
         <p className="text-xs text-blue-700 bg-blue-50 p-2 rounded">💡 <strong>The 95% rule:</strong> NEC tile installation standards require 95% back coverage (mortar contacting the back of the tile) in wet areas. Use the correct trowel and use the "back-butter" technique (spread thin coat on tile back before pressing) to achieve this.</p>

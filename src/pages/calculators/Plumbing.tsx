@@ -90,7 +90,7 @@ function Fixtures() {
             <div className="grid grid-cols-2 gap-3">
               <ResultCard label="Total Fixture Connections" value={totalFixtures} highlight />
               <ResultCard label="Total Drain Fixture Units" value={totalDFU} unit="DFU" />
-              <ResultCard label="Main Drain Size" value={totalDFU > 26 ? 4 : 3} unit='" pipe' />
+              <ResultCard label="Main Drain Size" value={totalDFU > 26 ? 4 : 3} unit={`" pipe`} />
               <ResultCard label="Toilets" value={full + half} unit="fixtures" small />
               <ResultCard label="Sink Drains" value={full + half + kit} unit="drains" small />
               <ResultCard label="Tubs / Showers" value={full} unit="fixtures" small />
@@ -153,7 +153,7 @@ function DWVPipe() {
 
   // Rough pipe quantities (LF estimates)
   const mainDrainLF  = stories_ === 1 ? 20 : 35;     // horizontal main to sewer
-  const stackLF      = stories_ * 12;                  // vertical stacks
+  const stackLF      = stories_ * 12;                  // vertical stacks // branches to fixtures // vent risers to roof
   const totalPVC4    = mainDrainLF + stackLF;
   const totalPVC3    = toilet_ * 8;   // 3" toilet drain branches
   const totalPVC2    = bath_ * 12 + sink_ * 6;
@@ -258,7 +258,7 @@ function SupplyLines() {
         <TermDef term="PEX-A vs PEX-B" def="PEX-A (Uponor, Rehau) is more flexible, can be expanded for fittings (no clamps needed). PEX-B (SharkBite, generic) is stiffer but cheaper. PEX-A is the pro choice; PEX-B is common for DIY repairs." />
         <TermDef term="Manifold" def="A brass or plastic block with multiple valved ports — one port per fixture. Hot water manifold + cold water manifold sit near the water heater. Each port has its own shutoff." />
         <TermDef term="Crimp vs clamp vs expansion fitting" def="Three ways to join PEX. Crimp (copper rings + crimp tool) is cheapest. Clamp (stainless clamps) is easier. Expansion (PEX-A only) is strongest. All are code-approved." />
-        <TermDef term='3/4" vs 1/2" PEX' def='Main lines running from the water heater/manifold to the manifold are 3/4". Branch lines from manifold to individual fixtures are 1/2". This sizing maintains water pressure.' />
+        <TermDef term={`3/4" vs 1/2" PEX`} def={`Main lines running from the water heater/manifold to the manifold are 3/4". Branch lines from manifold to individual fixtures are 1/2". This sizing maintains water pressure.`} />
       </InfoBox>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -327,7 +327,7 @@ function WaterHeater() {
   // Tankless sizing: GPM needed = simultaneous demand
   // Shower = 2 GPM; sink = 0.5 GPM; tub fill = 4 GPM
   const simultaneousGPM = Math.min(numPeople, 3) * 2.5; // rough
-  const btuNeeded = (simultaneous: number) => Math.ceil(simultaneous * 500 * 70);
+  const btuNeeded = (simultaneous: number) => Math.ceil(simultaneous * 500 * (70)); // ΔT ~70°F
   const btu = btuNeeded(simultaneousGPM);
   const kW  = Math.ceil(btu / 3412);
 

@@ -39,7 +39,7 @@ function JoistHangers() {
         <p><strong>Why they matter:</strong> Code requires metal connectors in most jurisdictions. They dramatically increase the strength of floor connections and prevent joists from twisting off their bearing points when someone walks across the floor.</p>
         <TermDef term="Rim joist / band board" def="The outer perimeter joist that runs along the top of the foundation wall. All floor joists attach to it using hangers." />
         <TermDef term="LUS / HUS hangers" def="Simpson Strong-Tie product names. LUS = light-duty, HUS = heavy-duty. Match the hanger to your joist size (e.g. LUS210 for 2x10)." />
-        <TermDef term="On Center (OC)" def='Distance measured from the center of one joist to the center of the next. 16" OC is standard floors; 12" OC is used for tile or heavy loads.' />
+        <TermDef term="On Center (OC)" def={`Distance measured from the center of one joist to the center of the next. 16" OC is standard floors; 12" OC is used for tile or heavy loads.`} />
         <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded">⚠️ Always use <strong>joist-hanger nails</strong> (short, fat 10d×1.5\" or 1.5\" × 0.148\" dia) — NOT regular framing nails. The holes in the hanger are sized for these specific nails.</p>
       </InfoBox>
 
@@ -209,9 +209,9 @@ function Fasteners() {
         <p><strong>Nails are for framing.</strong> Nails have better shear strength (resistance to sideways forces). When you're face-nailing studs to plates, installing sheathing, or toenailing rafters, use nails. A nail gun (framing nailer) makes this go 10× faster.</p>
         <p><strong>Screws are for decking, trim, and hardware.</strong> Screws hold better in direct pull-out (withdrawal), which is why you use them for deck boards, subfloor, LVL connections, and drywall.</p>
         <TermDef term="16d sinker" def="The most common framing nail. 3.25 inches long, with a vinyl coating that makes it 'sink' easier. Used for stud-to-plate, header, and general framing." />
-        <TermDef term="8d common / box nail" def='Shorter nail (2.5") used for sheathing (OSB/plywood on walls and roof deck). Box nails are slightly thinner and less likely to split wood.' />
+        <TermDef term="8d common / box nail" def={`Shorter nail (2.5") used for sheathing (OSB/plywood on walls and roof deck). Box nails are slightly thinner and less likely to split wood.`} />
         <TermDef term="GRK / Spax structural screws" def="Heavy-duty structural screws used for connecting LVL beams, post bases, and other load-bearing connections where a regular screw isn't rated." />
-        <TermDef term='Joist-hanger nails (10d × 1.5")' def="Short, fat nails specifically sized for the holes in metal connectors. Using regular nails here is a code violation — the hole size matters." />
+        <TermDef term={`Joist-hanger nails (10d × 1.5")`} def="Short, fat nails specifically sized for the holes in metal connectors. Using regular nails here is a code violation — the hole size matters." />
         <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded">⚠️ <strong>Don't use drywall screws in framing.</strong> They are brittle and not rated for structural shear loads. Only use properly rated structural screws or framing nails for structural connections.</p>
       </InfoBox>
 

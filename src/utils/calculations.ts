@@ -421,7 +421,7 @@ export function calcDrywall(
   doors: number,
   windows: number,
   includeCeiling: boolean,
-  sheetSize: '4x8' | '4x12'
+  sheetSF: number
 ): {
   wallArea: number;
   ceilingArea: number;
@@ -436,7 +436,6 @@ export function calcDrywall(
   const wallArea = perimeter * ceilingHeightFt - doors * 21 - windows * 15;
   const ceilingArea = includeCeiling ? roomLengthFt * roomWidthFt : 0;
   const totalArea = wallArea + ceilingArea;
-  const sheetSF = sheetSize === '4x12' ? 48 : 32;
   const sheets = Math.ceil((totalArea * 1.1) / sheetSF);
   // Joint compound: 5-gal bucket covers ~200 SF
   const jc5Gal = Math.ceil(totalArea / 200);
