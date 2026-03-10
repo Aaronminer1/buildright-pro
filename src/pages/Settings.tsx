@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Building2, Users, Plus, Pencil, Trash2, Check, X, Download, Upload, HardDrive, Lock, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Building2, Users, Plus, Pencil, Trash2, Check, X, Download, Upload, HardDrive, Lock, ShieldCheck, ShieldOff, Share2, FileSpreadsheet, Smartphone, RefreshCw, Mail } from 'lucide-react';
 import { useBusiness } from '../context/BusinessContext';
 import type { Customer } from '../types/business';
 import { exportBackup, importBackup } from '../db/backup';
 import { setPin, removePin, isPinEnabled, verifyPin } from '../db/pin';
+import {
+  exportCustomersCSV, exportProjectsCSV, exportQuotesCSV,
+  exportInvoicesCSV, exportAllSpreadsheetsCSV, shareBackupFile,
+} from '../db/csvExport';
 
 const TABS = ['Business Info', 'Customers', 'Data'] as const;
 type Tab = typeof TABS[number];
@@ -87,9 +91,11 @@ export function Settings() {
   const [saved, setSaved] = useState(false);
   const [addingCust, setAddingCust] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [backupStatus, setBackupStatus] = useState<'idle' | 'exporting' | 'importing' | 'done' | 'error'>('idle');
+  const [backupStatus, setBackupStatus] = useState<'idle' | 'exporting' | 'importing' | 'sharing' | 'done' | 'error'>('idle');
   const [backupMsg, setBackupMsg] = useState('');
   const importRef = useRef<HTMLInputElement>(null);
+  const [csvStatus, setCsvStatus] = useState<Record<string, 'idle' | 'busy' | 'done'>>({});
+  const [shareSupported, setShareSupported] = useState<boolean | null>(null);
 
   // PIN state
   const [pinEnabled, setPinEnabled] = useState<boolean>(false);
@@ -154,6 +160,32 @@ export function Settings() {
       setBackupMsg('Export failed. Try again.');
     }
     setTimeout(() => setBackupStatus('idle'), 3000);
+  };
+
+  const handleShare = async () => {
+    setBackupStatus('sharing');
+    const result = await shareBackupFile();
+    if (result === 'shared') {
+      setBackupStatus('done');
+      setBackupMsg('Backup shared successfully.');
+    } else if (result === 'unsupported') {
+      setShareSupported(false);
+      setBackupStatus('idle');
+    } else {
+      setBackupStatus('idle'); // cancelled
+    }
+    if (result === 'shared') setTimeout(() => setBackupStatus('idle'), 3000);
+  };
+
+  const handleCSV = async (label: string, fn: () => Promise<void>) => {
+    setCsvStatus(s => ({ ...s, [label]: 'busy' }));
+    try {
+      await fn();
+      setCsvStatus(s => ({ ...s, [label]: 'done' }));
+      setTimeout(() => setCsvStatus(s => ({ ...s, [label]: 'idle' })), 2500);
+    } catch {
+      setCsvStatus(s => ({ ...s, [label]: 'idle' }));
+    }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,34 +284,34 @@ export function Settings() {
         </div>
       )}
 
-      {/* ─── Data Backup ─── */}
+      {/* ─── Data Tab ─── */}
       {tab === 'Data' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-            <div>
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                <HardDrive size={16} className="text-amber-500" />
-                Local Storage — IndexedDB
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                All your data — jobs, customers, quotes, invoices, and checklists — is stored
-                locally on this device using IndexedDB. Nothing is sent to any server.
-                It stays here unless you clear your browser data.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
-                <span className="flex items-center gap-1">✅ Works offline</span>
-                <span className="flex items-center gap-1">✅ No account needed</span>
-                <span className="flex items-center gap-1">✅ No cloud upload</span>
-                <span className="flex items-center gap-1">⚠️ Device-specific (won't sync across devices)</span>
-              </div>
+
+          {/* Storage info */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+              <HardDrive size={16} className="text-amber-500" />
+              Local Storage — IndexedDB
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              All your data — jobs, customers, quotes, invoices, and checklists — is stored
+              locally on this device. Nothing is sent to any server.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+              <span>✅ Works offline</span>
+              <span>✅ No account needed</span>
+              <span>✅ No cloud upload</span>
+              <span>⚠️ Lost if browser data is cleared or device is replaced</span>
             </div>
           </div>
 
+          {/* Backup & Restore */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
             <h3 className="font-semibold text-slate-800">Backup &amp; Restore</h3>
             <p className="text-sm text-slate-500">
-              Export a backup file to your device — save it to cloud storage, email it to yourself,
-              or copy it to another device. Use Restore to bring it back.
+              A backup file contains ALL your data. Save it somewhere safe — then use Restore
+              to bring everything back on any device or browser.
             </p>
 
             {backupStatus === 'done' && (
@@ -293,34 +325,146 @@ export function Settings() {
               </div>
             )}
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleExport}
-                disabled={backupStatus === 'exporting'}
-                className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-60 transition-colors">
-                <Download size={15} />
-                {backupStatus === 'exporting' ? 'Exporting…' : 'Export Backup'}
-              </button>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {/* Download */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2 font-medium text-slate-800 text-sm">
+                  <Download size={15} className="text-amber-500" /> Download File
+                </div>
+                <p className="text-xs text-slate-500 flex-1">
+                  Saves a <strong>.json</strong> file to your device. Store it in Google Drive,
+                  iCloud, Dropbox, or a USB drive.
+                </p>
+                <button
+                  onClick={handleExport}
+                  disabled={backupStatus === 'exporting'}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-60 transition-colors">
+                  <Download size={14} />
+                  {backupStatus === 'exporting' ? 'Saving…' : 'Export Backup'}
+                </button>
+              </div>
 
-              <button
-                onClick={() => importRef.current?.click()}
-                disabled={backupStatus === 'importing'}
-                className="flex items-center gap-2 px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-60 transition-colors">
-                <Upload size={15} />
-                {backupStatus === 'importing' ? 'Restoring…' : 'Restore Backup'}
-              </button>
-              <input
-                ref={importRef}
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="sr-only"
-              />
+              {/* Share / Email */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2 font-medium text-slate-800 text-sm">
+                  <Mail size={15} className="text-amber-500" /> Email / Share
+                </div>
+                <p className="text-xs text-slate-500 flex-1">
+                  <strong>On mobile:</strong> opens your share sheet — send directly to Gmail,
+                  iCloud Mail, WhatsApp, etc. <strong>On desktop:</strong> download first,
+                  then attach to an email.
+                </p>
+                <button
+                  onClick={handleShare}
+                  disabled={backupStatus === 'sharing'}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-800 disabled:opacity-60 transition-colors">
+                  <Share2 size={14} />
+                  {backupStatus === 'sharing' ? 'Opening…' : 'Share Backup'}
+                </button>
+                {shareSupported === false && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    Sharing isn't supported in this browser. Download the file above and attach
+                    it to an email manually.
+                  </p>
+                )}
+              </div>
+
+              {/* Restore */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2 font-medium text-slate-800 text-sm">
+                  <RefreshCw size={15} className="text-amber-500" /> Restore
+                </div>
+                <p className="text-xs text-slate-500 flex-1">
+                  Upload a backup file to completely restore all data.
+                  <strong className="text-red-600"> This replaces everything currently in the app.</strong>
+                </p>
+                <button
+                  onClick={() => importRef.current?.click()}
+                  disabled={backupStatus === 'importing'}
+                  className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-60 transition-colors">
+                  <Upload size={14} />
+                  {backupStatus === 'importing' ? 'Restoring…' : 'Choose Backup File'}
+                </button>
+                <input ref={importRef} type="file" accept=".json" onChange={handleImport} className="sr-only" />
+              </div>
             </div>
+          </div>
 
-            <p className="text-xs text-slate-400">
-              Tip: Back up weekly and save the file to your phone's Google Drive or iCloud so
-              you can restore on a new device or after clearing browser data.
+          {/* Spreadsheet Export */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+            <div>
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                <FileSpreadsheet size={16} className="text-amber-500" />
+                Spreadsheet Export (CSV)
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Export your data as CSV files — open in Excel or Google Sheets. Great for
+                sharing with your accountant, bookkeeper, or keeping human-readable records.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {([
+                { label: 'All Data', fn: exportAllSpreadsheetsCSV, desc: 'Everything in one file' },
+                { label: 'Customers', fn: exportCustomersCSV, desc: 'Name, contact, address' },
+                { label: 'Projects', fn: exportProjectsCSV, desc: 'Jobs, phases, dates' },
+                { label: 'Quotes', fn: exportQuotesCSV, desc: 'Summary + line items' },
+                { label: 'Invoices', fn: exportInvoicesCSV, desc: 'Summary + payments' },
+              ] as const).map(({ label, fn, desc }) => (
+                <button
+                  key={label}
+                  onClick={() => handleCSV(label, fn)}
+                  disabled={csvStatus[label] === 'busy'}
+                  className="flex flex-col items-start gap-0.5 px-4 py-3 border border-slate-200 rounded-xl text-left hover:bg-slate-50 hover:border-amber-300 disabled:opacity-60 transition-colors group">
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                    {csvStatus[label] === 'done'
+                      ? <Check size={13} className="text-green-600" />
+                      : <Download size={13} className="text-amber-500 group-hover:translate-y-0.5 transition-transform" />}
+                    {csvStatus[label] === 'busy' ? 'Exporting…' : label}
+                  </span>
+                  <span className="text-xs text-slate-400">{desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Recovery Guide */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-4">
+            <h3 className="font-semibold text-amber-900 flex items-center gap-2">
+              <Smartphone size={16} className="text-amber-600" />
+              How to protect &amp; recover your data
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 text-sm">
+              <div className="space-y-1.5">
+                <p className="font-medium text-amber-900">📱 New phone or device</p>
+                <ol className="text-amber-800 space-y-1 list-decimal list-inside text-xs">
+                  <li>Export Backup on your old device</li>
+                  <li>Email it to yourself or save to Google Drive / iCloud</li>
+                  <li>Open BuildRight Pro on the new device</li>
+                  <li>Settings → Data → Choose Backup File</li>
+                </ol>
+              </div>
+              <div className="space-y-1.5">
+                <p className="font-medium text-amber-900">🔄 Browser data cleared</p>
+                <ol className="text-amber-800 space-y-1 list-decimal list-inside text-xs">
+                  <li>Open the backup file you saved earlier</li>
+                  <li>Settings → Data → Choose Backup File</li>
+                  <li>All data is restored instantly</li>
+                  <li>Set up a weekly backup habit to avoid data loss</li>
+                </ol>
+              </div>
+              <div className="space-y-1.5">
+                <p className="font-medium text-amber-900">📊 Accountant / tax time</p>
+                <ol className="text-amber-800 space-y-1 list-decimal list-inside text-xs">
+                  <li>Use Spreadsheet Export → Invoices or All Data</li>
+                  <li>Download the CSV file</li>
+                  <li>Attach it to an email to your accountant</li>
+                  <li>Opens in Excel or Google Sheets</li>
+                </ol>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 border-t border-amber-200 pt-3">
+              💡 Best practice: export a backup weekly and email it to yourself so you always
+              have a recent copy in your inbox.
             </p>
           </div>
 
