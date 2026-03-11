@@ -3,7 +3,7 @@ import { Card, ResultCard } from '../../components/ui/Card';
 import { InputField } from '../../components/ui/InputField';
 import { SelectField } from '../../components/ui/SelectField';
 import { Tabs } from '../../components/ui/Button';
-import { InfoBox } from '../../components/ui/InfoBox';
+import { InfoBox, TermDef } from '../../components/ui/InfoBox';
 import { calcWallFraming, calcFloorJoists, calcRafters, boardFeet, round2 } from '../../utils/calculations';
 import { HEADER_SIZES } from '../../data/referenceData';
 
@@ -280,8 +280,25 @@ function FloorJoistCalc() {
   const totalRim    = round2(result.rimBoardLF * floorCount);
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      <Card title="Inputs">
+    <div className="space-y-6">
+      <InfoBox title="🪵 Floor Joists — The Boards Under Every Step You Take" variant="blue" collapsible>
+        <p>Floor joists are the horizontal structural members that carry your subfloor decking. They span between load-bearing walls or beams, and everything in the house — furniture, people, walls above — rests on them. The right size and spacing determine whether your floor feels rock-solid or uncomfortably springy.</p>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-xs mt-2">
+          <TermDef term="Span" def="The clear horizontal distance between bearing points — not total joist length. A joist from wall to wall across 14 ft has a 14 ft span. Longer spans need larger lumber." />
+          <TermDef term="Bearing" def="Where the joist rests and transfers its load — a wall top plate, beam flange, or ledger. Code minimum: 1½″ bearing on wood, 3″ on masonry." />
+          <TermDef term="Bridging" def="Cross-bracing installed mid-span between joists — either solid 2× blocking or metal X-bridging. Prevents joists from rolling/twisting and distributes point loads (heavy appliances, posts) across multiple joists." />
+          <TermDef term="Rim board / band joist" def="The perimeter joist that caps the ends of all floor joists, completing the floor box. Nailed through the rim into each joist end. Also serves as the nailing surface for exterior wall framing above." />
+          <TermDef term="Engineered I-joist (TJI)" def="Factory-built joists shaped like a steel I-beam. Span farther than same-size dimensional lumber, stay straighter, and their OSB web can be drilled for plumbing and wiring without structural loss. Cost more but essential for longer spans." />
+          <TermDef term="On Center (OC)" def={`Measurement from center of one joist to center of the next. 16″ OC is standard residential. Use 12″ OC for tile floors or very heavy loads.`} />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-x-6 text-sm mt-3 gap-y-2">
+          <p><strong>Tile &amp; stone floors:</strong> Require a stiffer floor (L/360 live-load deflection limit vs. L/480 for wood floors). If you're tiling, go to 12″ OC or up one joist size — flex cracks grout joints over time.</p>
+          <p><strong>Pro note:</strong> Always double joists under any wall that runs parallel above. A single joist under a wall will deflect unevenly and create a hump or soft spot in the floor.</p>
+        </div>
+        <p className="text-xs text-slate-500 mt-2">Verify all spans with IRC Table R502.3.1. Tables assume SYP #2 or Douglas Fir #2 at normal moisture — check your local building department for species adjustments.</p>
+      </InfoBox>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card title="Inputs">
         <div className="space-y-4">
           <InputField label="Joist Span (clear span)" value={span} onChange={setSpan} unit="ft"
             hint="Horizontal distance between bearing points (beams, walls)" />
@@ -343,6 +360,7 @@ function FloorJoistCalc() {
           <p className="text-xs text-slate-400 mt-2">Verify with IRC Table R502.3.1</p>
         </div>
       </div>
+      </div>
     </div>
   );
 }
@@ -354,6 +372,7 @@ function RafterCalc() {
   const [pitch,    setPitch]    = useState('6');
   const [overhang, setOverhang] = useState('12');
   const [spacing,  setSpacing]  = useState('24');
+  const [size,     setSize]     = useState('2x8');
 
   const result = useMemo(() => calcRafters(
     parseFloat(width) || 0,
@@ -365,10 +384,29 @@ function RafterCalc() {
 
   const angleDeg = (Math.atan(parseFloat(pitch) / 12) * 180 / Math.PI).toFixed(1);
   const multiplier = (Math.sqrt(parseFloat(pitch) ** 2 + 144) / 12).toFixed(3);
+  const widthIn   = ({ '2x6': 5.5, '2x8': 7.25, '2x10': 9.25, '2x12': 11.25 } as Record<string,number>)[size] ?? 7.25;
+  const rafterBF  = round2(boardFeet(1.5, widthIn, result.rafterLength, result.studs));
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      <Card title="Inputs" subtitle="Simple gable roof">
+    <div className="space-y-6">
+      <InfoBox title="🔺 Roof Rafters — How a Stick-Framed Roof Goes Up" variant="amber" collapsible>
+        <p>Rafters are the sloped structural members that form the shape of your roof and carry the weight of the roof decking, felt, and shingles down to the exterior walls. <strong>Most modern homes use factory-built trusses instead of site-cut rafters</strong> — trusses are cheaper, faster, and pre-engineered. This calculator covers traditional stick-framing, which is still common for custom rooflines, additions, and shed roofs.</p>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-xs mt-2">
+          <TermDef term="Pitch" def="Rise in inches per 12 inches of horizontal run — written as X:12. A 6:12 pitch rises 6 inches for every 12 inches of horizontal distance. Steeper = more snow sheds off, more lumber needed." />
+          <TermDef term="Multiplier" def="The math factor to convert horizontal run to actual rafter length. Multiply half the building width by the multiplier to get rafter length. e.g., 6:12 pitch = 1.118× multiplier." />
+          <TermDef term="Ridge board" def="The horizontal board at the roof peak that both sets of rafters nail into. It is NOT structural — it's a nailing surface only. The two opposing rafters push against each other and the ceiling joists (or rafter ties) resist the outward wall thrust." />
+          <TermDef term="Ridge beam" def="A structural beam at the peak that actually supports the rafter ends. Required for cathedral ceilings (no ceiling joists). Needs posts or columns below. Sized by an engineer." />
+          <TermDef term={`Birdsmouth cut`} def={`The notch cut into each rafter where it sits on the wall top plate. Consists of a plumb cut (vertical face against wall) and a seat cut (horizontal face on plate). Maximum depth: 1/3 of the rafter depth.`} />
+          <TermDef term="Collar tie / Rafter tie" def="Collar tie: horizontal member connecting opposing rafters in the upper third of the roof — resists wind uplift. Rafter tie: same concept but at ceiling level (lower third) — resists the outward wall thrust caused by rafter loads. Ceiling joists serve as rafter ties in an attic." />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-x-6 text-sm mt-3 gap-y-2">
+          <p><strong>Pitch below 3:12:</strong> Do not use asphalt shingles. Low slopes require modified bitumen, TPO, EPDM, or standing seam metal. Code requires a minimum 2:12 for most roofing materials.</p>
+          <p><strong>Hip &amp; valley rafters</strong> are 1.414× longer than common rafters (diagonal math). They need to be deeper by at least one size to carry the concentrated load from jack rafters framing into them.</p>
+        </div>
+        <p className="text-xs text-slate-500 mt-2">Verify rafter sizing with IRC Table R802.4. The pitch diagram below shows rise, run, and the rafter hypotenuse your crew will actually cut.</p>
+      </InfoBox>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card title="Inputs" subtitle="Simple gable roof">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <InputField label="Building Width" value={width}    onChange={setWidth}    unit="ft" />
@@ -388,6 +426,14 @@ function RafterCalc() {
               { value: 24, label: '24" OC (standard with trusses)' },
             ]}
           />
+          <SelectField label="Rafter Size (lumber)" value={size} onChange={setSize}
+            options={[
+              { value: '2x6',  label: '2×6 — low pitch, short spans (≤ 14 ft)' },
+              { value: '2x8',  label: '2×8 — medium pitch (≤ 18 ft)' },
+              { value: '2x10', label: '2×10 — steeper pitch or longer spans (≤ 22 ft)' },
+              { value: '2x12', label: '2×12 — large roof, high snow loads' },
+            ]}
+          />
         </div>
       </Card>
 
@@ -404,7 +450,7 @@ function RafterCalc() {
             <ResultCard label="Rafter Length" value={result.rafterLength} unit="ft" highlight />
             <ResultCard label="Total Rafters" value={result.studs}        unit="pcs" />
             <ResultCard label="Ridge Board"   value={result.ridgeLF}      unit="LF" small />
-            <ResultCard label="Lumber BF"     value={result.boardFeet}    unit="BF" small />
+            <ResultCard label="Lumber BF"     value={rafterBF}            unit="BF" small />
           </div>
         </Card>
 
@@ -422,6 +468,7 @@ function RafterCalc() {
           </svg>
         </Card>
       </div>
+      </div>
     </div>
   );
 }
@@ -429,14 +476,35 @@ function RafterCalc() {
 // ─── Headers Tab ──────────────────────────────────────────────────────────────
 function HeadersCalc() {
   const [openingWidth, setOpening] = useState('4');
+  const [count,        setCount]   = useState('1');
 
   const openingFt = parseFloat(openingWidth) || 0;
   const match = HEADER_SIZES.find(h => openingFt <= h.maxOpeningFt);
-  const recommended = match ?? HEADER_SIZES[HEADER_SIZES.length - 1];
+  const recommended   = match ?? HEADER_SIZES[HEADER_SIZES.length - 1];
+  const openingCount  = Math.max(1, parseInt(count) || 1);
+  // Each header = rough opening + 6 inches (3" bearing each side per IRC R602.7)
+  const headerLF      = Math.round((openingFt + 0.5) * openingCount * 10) / 10;
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      <Card title="Find Header Size" subtitle="Load-bearing wall openings (IRC Table R602.7)">
+    <div className="space-y-6">
+      <InfoBox title="🚪 Headers — Why Every Opening Needs Its Own Beam" variant="blue" collapsible>
+        <p>Every door and window opening in a load-bearing wall creates a gap in the stud layout — and something has to carry the floor or roof load that was sitting on those missing studs. That something is a <strong>header</strong>: a horizontal beam (typically doubled 2× lumber or LVL) that spans the opening and transfers the load to the king studs on each side.</p>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-xs mt-2">
+          <TermDef term="King stud" def="Full-height stud on each side of an opening. The header bears on the jack studs nailed alongside the king stud. King studs run from bottom plate to top plate." />
+          <TermDef term="Jack stud (trimmer)" def="Shorter stud nailed alongside the king stud that physically supports the header at each end. Its height determines the rough opening height." />
+          <TermDef term="Cripple stud" def="Short studs above a header (and below a window sill) that continue the regular stud layout for sheathing backing and insulation support. They carry no structural load." />
+          <TermDef term="LVL (Laminated Veneer Lumber)" def="Engineered lumber made of thin wood veneers glued under heat and pressure. Much stronger and straighter than dimensional lumber. Preferred for large openings and multi-story walls — doesn't shrink, warp, or creep over time." />
+          <TermDef term="Rough opening (RO)" def="The framed opening size — always slightly larger than the window or door unit to allow shimming and leveling. Typically RO = unit size + ½″ to ¾″." />
+          <TermDef term="Point load" def="A concentrated load directly above an opening from a beam, post, or ridge above. Requires an engineer to size the header correctly — the tables on this tab assume standard distributed loading only." />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-x-6 text-sm mt-3 gap-y-2">
+          <p><strong>Non-load-bearing walls:</strong> Partition walls don't carry floor or roof loads, so the header can be a single 2×4 laid flat — or even just a doubled top plate. Only load-bearing walls need structural headers.</p>
+          <p><strong>When to use LVL:</strong> Any opening over 5 ft on a load-bearing wall, any second-floor wall, or anywhere you've seen dimensional lumber headers stick doors or bow windows over time. LVL is more expensive but permanent.</p>
+        </div>
+        <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded mt-2">⚠️ The size table on this page covers <strong>1-story, standard loading only</strong>. Two-story walls, garage headers, and any wall with a point load above must be verified with IRC Table R602.7 or a structural engineer.</p>
+      </InfoBox>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card title="Find Header Size" subtitle="Load-bearing wall openings (IRC Table R602.7)">
         <div className="space-y-4">
           <InputField
             label="Opening Width (rough opening)"
@@ -447,6 +515,15 @@ function HeadersCalc() {
             max={20}
             step={0.5}
             hint="Measure the clear span between trimmers"
+          />
+          <InputField
+            label="Number of openings this size"
+            value={count}
+            onChange={setCount}
+            unit="openings"
+            min={1}
+            step={1}
+            hint="Same-size doors or windows — get total header lumber in one step"
           />
 
           {recommended && (
@@ -464,6 +541,15 @@ function HeadersCalc() {
             Always consult IRC Table R602.7 or a structural engineer for 2-story walls, ridge beams,
             or unusual loads.
           </div>
+
+          {openingCount > 0 && recommended && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-2">
+              <div className="text-sm font-semibold text-amber-800 mb-1">Total Header Material — {openingCount} opening{openingCount !== 1 ? 's' : ''}</div>
+              <div className="text-2xl font-bold text-amber-700">{headerLF} LF</div>
+              <div className="text-xs text-amber-600 mt-1">{recommended.twoBySize} × {openingCount} opening{openingCount !== 1 ? 's' : ''} = {headerLF} linear feet total</div>
+              <div className="text-xs text-slate-500 mt-1">Order rough lumber — your carpenter will cut to exact length. Add 10% for waste and end checks.</div>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -491,6 +577,7 @@ function HeadersCalc() {
           </table>
         </div>
       </Card>
+      </div>
     </div>
   );
 }
@@ -513,8 +600,25 @@ function SheathingCalc() {
   const sheetsCost = sheets48 * 26; // rough cost per sheet
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      <Card title="Inputs" subtitle="Wall sheathing (OSB or plywood)">
+    <div className="space-y-6">
+      <InfoBox title="🏗️ Wall Sheathing — The Structural Skin That Keeps Your House Square" variant="blue" collapsible>
+        <p>Wall sheathing (typically OSB or plywood) is nailed to the outside face of your stud framing before any siding or housewrap goes on. It does two critical jobs: <strong>(1) creates a rigid diaphragm</strong> that resists lateral (racking) forces from wind and earthquakes, and <strong>(2) provides a continuous nailing surface</strong> for siding and exterior trim. Without sheathing, a wall frame can lean sideways — a single 40 mph wind gust can rack an unsheathed wall out of plumb permanently.</p>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-xs mt-2">
+          <TermDef term="OSB (Oriented Strand Board)" def="The standard wall sheathing material today. Wood strands pressed and glued under heat and pressure. 'Exposure 1' rated — can get wet during construction but must be dried in before long-term exposure. Cheaper than plywood." />
+          <TermDef term="CDX Plywood" def="Three or more wood veneers glued with alternating grain direction. Stronger at panel edges than OSB, holds nails better when wet, and is more tolerant of prolonged moisture. The 'X' means Exterior-grade glue. Better choice in coastal or high-humidity climates." />
+          <TermDef term="Shear wall" def="A specific wall section designed and detailed to resist lateral loads. Usually shown on structural drawings with a nail schedule, hold-down hardware, and specific panel layout. More than just regular sheathing — it transfers lateral loads to the foundation." />
+          <TermDef term="Nailing schedule" def="How many nails, what size, and how far apart — THIS is what transfers racking load, not just the panels. Standard: 8d common at 6″ OC panel edges, 12″ OC field. Shear walls may be 4″ OC or 3″ OC edges. Same panels, different nailing = dramatically different shear capacity." />
+          <TermDef term="Rated sheathing" def="OSB or plywood stamped by APA (the engineered wood association) with a span rating, thickness, and exposure rating. Always buy rated sheathing — the stamp tells inspectors and engineers exactly what you installed." />
+          <TermDef term={`H-clip / panel clip`} def={`Small metal clip that fits between panel edges at mid-span between studs. Holds the 1/8″ expansion gap and prevents edge crush without needing solid blocking at every horizontal seam.`} />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-x-6 text-sm mt-3 gap-y-2">
+          <p><strong>Leave a 1/8″ gap at all panel edges.</strong> OSB swells slightly when it absorbs moisture. Panels installed tight will buckle outward ("telephone pole" pattern) when they get wet — leave the gap and use H-clips to hold spacing.</p>
+          <p><strong>Tall walls tip:</strong> 4×9 and 4×10 sheets eliminate a horizontal seam in 9 ft and 10 ft stud walls. Fewer seams = better racking performance and less labor. Costs slightly more per sheet but worth it on exterior walls.</p>
+        </div>
+        <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded mt-2">⚠️ This calculator covers <strong>wall sheathing only</strong>. Roof sheathing uses the same OSB/plywood but different thicknesses (7/16″ or 15/32″) — use your roofing calculator or run this twice with different waste factors.</p>
+      </InfoBox>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card title="Inputs" subtitle="Wall sheathing (OSB or plywood)">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <InputField label="Total Wall Length" value={wallLen} onChange={setWallLen} unit="ft"
@@ -543,6 +647,7 @@ function SheathingCalc() {
           7/16" OSB is standard; 15/32" rated sheathing for structural shear panels.
         </p>
       </Card>
+      </div>
     </div>
   );
 }
