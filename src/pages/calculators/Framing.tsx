@@ -350,6 +350,48 @@ function FloorJoistCalc() {
             <ResultCard label="Rim BF"    value={rimBF}   unit="BF" />
           </div>
         </Card>
+        <Card title="Floor Framing Cross-Section">
+          <svg viewBox="0 0 320 160" className="w-full max-h-40" role="img" aria-label="Floor joist diagram">
+            {/* Foundation / beam */}
+            <rect x="0" y="125" width="320" height="20" fill="#94a3b8" rx="2"/>
+            <text x="160" y="138" textAnchor="middle" fontSize="9" fill="white" fontWeight="bold">BEAM / FOUNDATION WALL</text>
+            {/* Rim board left */}
+            <rect x="8" y="90" width="14" height="35" fill="#d97706" rx="1"/>
+            <text x="15" y="86" textAnchor="middle" fontSize="8" fill="#92400e">Rim</text>
+            {/* Rim board right */}
+            <rect x="298" y="90" width="14" height="35" fill="#d97706" rx="1"/>
+            <text x="305" y="86" textAnchor="middle" fontSize="8" fill="#92400e">Rim</text>
+            {/* Joists */}
+            {[50, 95, 140, 185, 230, 275].map((x, i) => (
+              <g key={i}>
+                <rect x={x} y="90" width="12" height="35" fill="#f59e0b" rx="1"/>
+              </g>
+            ))}
+            {/* Joist labels */}
+            <text x="95" y="140" textAnchor="middle" fontSize="8" fill="#78350f">Joist</text>
+            <text x="140" y="140" textAnchor="middle" fontSize="8" fill="#78350f">Joist</text>
+            {/* Subfloor */}
+            <rect x="8" y="82" width="304" height="8" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" rx="1"/>
+            <text x="160" y="79" textAnchor="middle" fontSize="9" fill="#475569">SUBFLOOR (OSB/Plywood)</text>
+            {/* Bridging */}
+            <line x1="95" y1="100" x2="107" y2="118" stroke="#ef4444" strokeWidth="1.5"/>
+            <line x1="107" y1="100" x2="95" y2="118" stroke="#ef4444" strokeWidth="1.5"/>
+            <line x1="140" y1="100" x2="152" y2="118" stroke="#ef4444" strokeWidth="1.5"/>
+            <line x1="152" y1="100" x2="140" y2="118" stroke="#ef4444" strokeWidth="1.5"/>
+            <text x="124" y="134" textAnchor="middle" fontSize="8" fill="#b91c1c">bridging</text>
+            {/* Span arrow */}
+            <line x1="22" y1="62" x2="298" y2="62" stroke="#3b82f6" strokeWidth="1" markerEnd="url(#ah)" markerStart="url(#ah)"/>
+            <defs>
+              <marker id="ah" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#3b82f6"/>
+              </marker>
+            </defs>
+            <text x="160" y="57" textAnchor="middle" fontSize="9" fill="#1d4ed8" fontWeight="bold">SPAN (clear distance between bearing points)</text>
+            {/* 16" OC label */}
+            <line x1="50" y1="150" x2="95" y2="150" stroke="#64748b" strokeWidth="1"/>
+            <text x="72" y="158" textAnchor="middle" fontSize="8" fill="#64748b">16″ OC</text>
+          </svg>
+        </Card>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-xs font-semibold text-slate-600 mb-2">Max Spans at 16 in OC (SYP #2):</p>
           <div className="text-xs text-slate-500 space-y-1">
@@ -455,17 +497,47 @@ function RafterCalc() {
         </Card>
 
         {/* Visual pitch diagram */}
-        <Card title="Pitch Diagram">
-          <svg viewBox="0 0 220 110" className="w-full max-h-28">
-            <line x1="10" y1="90" x2="130" y2="90" stroke="#94a3b8" strokeWidth="2"/>
-            <line x1="130" y1="90" x2="130" y2={90 - parseFloat(pitch) * 6}
-              stroke="#94a3b8" strokeWidth="2"/>
-            <line x1="10" y1="90" x2="130" y2={90 - parseFloat(pitch) * 6}
-              stroke="#f59e0b" strokeWidth="3"/>
-            <text x="70" y="105" textAnchor="middle" fontSize="10" fill="#64748b">12"</text>
-            <text x="143" y={90 - (parseFloat(pitch) * 3)} fontSize="10" fill="#64748b">{pitch}"</text>
-            <text x="55" y={78 - parseFloat(pitch) * 2} fontSize="10" fill="#f59e0b">rafter</text>
-          </svg>
+        <Card title="Gable Roof Diagram">
+          {(() => {
+            const pitchNum = parseFloat(pitch) || 6;
+            const rise = pitchNum * 6;   // scale: 6px per inch of pitch rise
+            const peakY = Math.max(15, 90 - rise);
+            const ovhPx = Math.min(20, (parseFloat(overhang) / 12) * 12);
+            return (
+              <svg viewBox="0 0 280 140" className="w-full max-h-40" role="img" aria-label="Roof pitch diagram">
+                {/* Wall boxes */}
+                <rect x={10 - ovhPx} y="90" width="40" height="40" fill="#94a3b8" rx="1"/>
+                <rect x={230 + ovhPx - 40} y="90" width="40" height="40" fill="#94a3b8" rx="1"/>
+                <text x="30" y="115" textAnchor="middle" fontSize="8" fill="white">Wall</text>
+                <text x="250" y="115" textAnchor="middle" fontSize="8" fill="white">Wall</text>
+                {/* Left rafter */}
+                <line x1={10 - ovhPx} y1="90" x2="140" y2={peakY} stroke="#f59e0b" strokeWidth="4"/>
+                {/* Right rafter */}
+                <line x1={230 + ovhPx} y1="90" x2="140" y2={peakY} stroke="#f59e0b" strokeWidth="4"/>
+                {/* Ridge board */}
+                <rect x="134" y={peakY - 4} width="12" height="8" fill="#c2410c" rx="1"/>
+                <text x="140" y={peakY - 8} textAnchor="middle" fontSize="8" fill="#c2410c">Ridge</text>
+                {/* Ceiling joist / rafter tie */}
+                <line x1="30" y1="90" x2="250" y2="90" stroke="#3b82f6" strokeWidth="2.5" strokeDasharray="6,3"/>
+                <text x="140" y="86" textAnchor="middle" fontSize="8" fill="#1d4ed8">Rafter Tie / Ceiling Joist</text>
+                {/* Overhang labels */}
+                {ovhPx > 5 && <>
+                  <line x1={10 - ovhPx} y1="100" x2="30" y2="100" stroke="#64748b" strokeWidth="1"/>
+                  <text x={10 - ovhPx / 2} y="96" textAnchor="middle" fontSize="7" fill="#64748b">overhang</text>
+                </>}
+                {/* Rise/run triangle */}
+                <line x1="140" y1="90" x2="140" y2={peakY} stroke="#e2e8f0" strokeWidth="1.5"/>
+                <line x1="85" y1="90" x2="140" y2="90" stroke="#e2e8f0" strokeWidth="1.5"/>
+                <text x="115" y="103" textAnchor="middle" fontSize="9" fill="#64748b">12″</text>
+                <text x="147" y={90 - rise / 2} fontSize="9" fill="#64748b">{pitchNum}″</text>
+                {/* Rafter label */}
+                <text x="90" y={83 - rise / 3} textAnchor="middle" fontSize="9" fill="#d97706" fontWeight="bold">{result.rafterLength} ft rafter</text>
+                {/* Birdsmouth symbol */}
+                <polygon points={`30,90 42,90 42,82`} fill="none" stroke="#ef4444" strokeWidth="1.5"/>
+                <text x="40" y="106" textAnchor="middle" fontSize="7" fill="#dc2626">birdsmouth</text>
+              </svg>
+            );
+          })()}
         </Card>
       </div>
       </div>
@@ -553,6 +625,47 @@ function HeadersCalc() {
         </div>
       </Card>
 
+      <Card title="Header Anatomy Diagram">
+          <svg viewBox="0 0 280 230" className="w-full max-h-56" role="img" aria-label="Header anatomy diagram">
+            {/* Wall outline */}
+            <rect x="10" y="10" width="260" height="210" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1.5" rx="3"/>
+            {/* Bottom plate */}
+            <rect x="10" y="195" width="260" height="12" fill="#d97706" rx="1"/>
+            <text x="140" y="204" textAnchor="middle" fontSize="8" fill="white" fontWeight="bold">BOTTOM PLATE</text>
+            {/* Top plate (double) */}
+            <rect x="10" y="10" width="260" height="10" fill="#d97706" rx="1"/>
+            <rect x="10" y="20" width="260" height="8" fill="#f59e0b" rx="1"/>
+            <text x="140" y="17" textAnchor="middle" fontSize="8" fill="white" fontWeight="bold">DOUBLE TOP PLATE</text>
+            {/* Left king stud */}
+            <rect x="18" y="28" width="12" height="167" fill="#fbbf24" rx="1"/>
+            <text x="24" y="115" textAnchor="middle" fontSize="8" fill="#78350f" transform="rotate(-90,24,115)">KING STUD</text>
+            {/* Left jack stud (trimmer) */}
+            <rect x="32" y="89" width="10" height="106" fill="#fde68a" stroke="#f59e0b" strokeWidth="0.5" rx="1"/>
+            <text x="37" y="138" textAnchor="middle" fontSize="7" fill="#92400e" transform="rotate(-90,37,138)">JACK</text>
+            {/* Right king stud */}
+            <rect x="250" y="28" width="12" height="167" fill="#fbbf24" rx="1"/>
+            <text x="256" y="115" textAnchor="middle" fontSize="8" fill="#78350f" transform="rotate(90,256,115)">KING STUD</text>
+            {/* Right jack stud (trimmer) */}
+            <rect x="238" y="89" width="10" height="106" fill="#fde68a" stroke="#f59e0b" strokeWidth="0.5" rx="1"/>
+            <text x="243" y="138" textAnchor="middle" fontSize="7" fill="#92400e" transform="rotate(90,243,138)">JACK</text>
+            {/* Header (double) */}
+            <rect x="42" y="62" width="196" height="13" fill="#0369a1" rx="1"/>
+            <rect x="42" y="75" width="196" height="13" fill="#0284c7" rx="1"/>
+            <text x="140" y="72" textAnchor="middle" fontSize="9" fill="white" fontWeight="bold">HEADER (double 2× or LVL)</text>
+            {/* Cripple studs above header */}
+            {[60, 90, 120, 150, 180, 210].map((x, i) => (
+              <rect key={i} x={x} y="28" width="10" height="34" fill="#93c5fd" rx="1"/>
+            ))}
+            <text x="140" y="50" textAnchor="middle" fontSize="8" fill="#1e40af">CRIPPLE STUDS</text>
+            {/* Opening */}
+            <rect x="42" y="88" width="196" height="107" fill="#dbeafe" stroke="#93c5fd" strokeWidth="1" rx="2"/>
+            <text x="140" y="148" textAnchor="middle" fontSize="10" fill="#1e40af" fontWeight="bold">ROUGH OPENING</text>
+            <text x="140" y="160" textAnchor="middle" fontSize="8" fill="#3b82f6">(door or window unit goes here)</text>
+            {/* RO width arrow */}
+            <line x1="42" y1="106" x2="238" y2="106" stroke="#ef4444" strokeWidth="1.5"/>
+            <text x="140" y="120" textAnchor="middle" fontSize="8" fill="#dc2626">← Rough Opening Width →</text>
+          </svg>
+        </Card>
       <Card title="Full Header Size Table" subtitle="IRC R602.7 — 1-story load-bearing walls">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -632,6 +745,41 @@ function SheathingCalc() {
           <InputField label="Waste Factor" value={waste} onChange={setWaste} unit="%" min={0} />
         </div>
       </Card>
+      <Card title="Sheathing Panel Layout">
+          <svg viewBox="0 0 280 160" className="w-full max-h-40" role="img" aria-label="Sheathing panel layout">
+            {/* Wall frame outline */}
+            <rect x="10" y="10" width="260" height="140" fill="#f8fafc" stroke="#94a3b8" strokeWidth="1.5" rx="2"/>
+            {/* Stud lines */}
+            {[42, 74, 106, 138, 170, 202, 234].map((x, i) => (
+              <line key={i} x1={x} y1="10" x2={x} y2="150" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,2"/>
+            ))}
+            {/* Panel row 1 — full 4×8 panels */}
+            <rect x="10" y="10" width="128" height="70" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.5" rx="1"/>
+            <rect x="138" y="10" width="128" height="70" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.5" rx="1"/>
+            {/* Gap indicator row 1 */}
+            <text x="74" y="50" textAnchor="middle" fontSize="9" fill="#d97706" fontWeight="bold">4 × 8 Sheet</text>
+            <text x="202" y="50" textAnchor="middle" fontSize="9" fill="#d97706" fontWeight="bold">4 × 8 Sheet</text>
+            {/* Panel row 2 — offset (staggered) */}
+            <rect x="10" y="82" width="64" height="68" fill="#fde68a" stroke="#f59e0b" strokeWidth="1.5" rx="1"/>
+            <rect x="74" y="82" width="128" height="68" fill="#fde68a" stroke="#f59e0b" strokeWidth="1.5" rx="1"/>
+            <rect x="202" y="82" width="68" height="68" fill="#fde68a" stroke="#f59e0b" strokeWidth="1.5" rx="1"/>
+            {/* Row 2 labels */}
+            <text x="37" y="120" textAnchor="middle" fontSize="8" fill="#92400e">cut</text>
+            <text x="138" y="120" textAnchor="middle" fontSize="8" fill="#d97706" fontWeight="bold">full sheet</text>
+            <text x="236" y="120" textAnchor="middle" fontSize="8" fill="#92400e">cut</text>
+            {/* Seam stagger label */}
+            <text x="140" y="7" textAnchor="middle" fontSize="8" fill="#64748b">Stagger seams — never align across rows</text>
+            {/* 1/8 gap */}
+            <line x1="130" y1="82" x2="142" y2="82" stroke="#ef4444" strokeWidth="3"/>
+            <text x="136" y="95" textAnchor="middle" fontSize="7" fill="#dc2626">1/8″ gap</text>
+            {/* Nailing dots on left panel */}
+            {[10, 26, 42, 58, 74, 90, 106, 122, 130].map((x, i) => [10, 70, 82, 140].map((y, j) => (
+              <circle key={`${i}-${j}`} cx={x} cy={y} r="2" fill={x === 10 || x === 128 || y === 10 || y === 80 ? '#ef4444' : '#94a3b8'}/>
+            )))}
+            <text x="10" y="155" fontSize="7" fill="#ef4444">● 6″ OC edges</text>
+            <text x="70" y="155" fontSize="7" fill="#94a3b8">● 12″ OC field</text>
+          </svg>
+        </Card>
       <Card title="Results">
         <div className="grid grid-cols-2 gap-3">
           <ResultCard label="Gross Wall Area"  value={Math.round(grossArea)}   unit="SF" small />
